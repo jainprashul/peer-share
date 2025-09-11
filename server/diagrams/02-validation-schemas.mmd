@@ -1,0 +1,21 @@
+graph LR
+    A[Raw WebSocket Message] --> B[JSON.parse]
+    B --> C[Zod validateMessage]
+    C --> D{Discriminated Union}
+    
+    D -->|type: 'create-group'| E[CreateGroupMessageSchema]
+    D -->|type: 'join-group'| F[JoinGroupMessageSchema]
+    D -->|type: 'leave-group'| G[LeaveGroupMessageSchema]
+    D -->|type: 'call-request'| H[CallRequestMessageSchema]
+    D -->|type: 'call-response'| I[CallResponseMessageSchema]
+    D -->|type: 'update-peer-id'| J[UpdatePeerIdMessageSchema]
+    
+    E --> E1[Validate groupName: GroupNameSchema<br/>Validate username: UsernameSchema]
+    F --> F1[Validate groupId: GroupIdSchema<br/>Validate username: UsernameSchema<br/>Validate peerId: PeerIdSchema optional]
+    G --> G1[Validate userId: UserIdSchema]
+    H --> H1[Validate targetPeerId: PeerIdSchema<br/>Validate fromPeerId: PeerIdSchema<br/>Validate fromUsername: UsernameSchema]
+    I --> I1[Validate accepted: boolean<br/>Validate fromPeerId: PeerIdSchema<br/>Validate toPeerId: PeerIdSchema]
+    J --> J1[Validate peerId: PeerIdSchema]
+    
+    classDef schemaClass fill:#fff5ee,stroke:#ff8800,stroke-width:2px
+    class E,F,G,H,I,J,E1,F1,G1,H1,I1,J1 schemaClass

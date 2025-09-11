@@ -1,0 +1,103 @@
+flowchart TD
+    %% Connection Establishment
+    A[Client Connects] -->|WebSocket| B[WebSocketHandler.handleConnection]
+    B --> C[Setup Connection Properties]
+    C --> D[ws.isAlive = true]
+    C --> E[Setup ping/pong health check]
+    C --> F[Setup message listener]
+    
+    %% Message Reception Flow
+    F -->|Receives Buffer| G[Parse JSON from Buffer]
+    G -->|Success| H[Call handleMessage with rawMessage]
+    G -->|JSON Parse Error| I[Send INVALID_MESSAGE Error]
+    I --> END1[Connection continues]
+    
+    %% Message Validation & Routing
+    H --> J[validateMessage with Zod]
+    J -->|Validation Success| K{Discriminated Union Routing}
+    J -->|ZodError| L[Send Validation Error Response]
+    L --> END2[Connection continues]
+    
+    %% Message Type Routing
+    K -->|create-group| M[handleCreateGroup]
+    K -->|join-group| N[handleJoinGroup]
+    K -->|leave-group| O[handleLeaveGroup]
+    K -->|call-request| P[handleCallRequest]
+    K -->|call-response| Q[handleCallResponse]
+    K -->|update-peer-id| R[handleUpdatePeerId]
+    K -->|unknown type| S[Send INVALID_MESSAGE Error]
+    S --> END3[Connection continues]
+    
+    %% Create Group Flow
+    M --> M1[Extract groupName, username]
+    M1 --> M2[groupManager.createGroup with Zod validation]
+    M2 -->|Success| M3[Update WebSocket user properties]
+    M3 --> M4[Send group-created response]
+    M4 --> END4[Flow Complete]
+    M2 -->|Error| M5[Send error response]
+    M5 --> END5[Flow Complete]
+    
+    %% Join Group Flow
+    N --> N1[Extract groupId, username, peerId]
+    N1 --> N2[groupManager.joinGroup with validation]
+    N2 -->|Success| N3[Update WebSocket user properties]
+    N3 --> N4[Get existing group members]
+    N4 --> N5[Send group-joined response to joiner]
+    N5 --> N6[Broadcast user-joined to other members]
+    N6 --> N7{Has peerId?}
+    N7 -->|Yes| N8[Handle Peer Discovery]
+    N7 -->|No| END6[Flow Complete]
+    N8 --> N9[Broadcast peer-joined to others]
+    N9 --> N10[Send existing-peers to new user]
+    N10 --> END7[Flow Complete]
+    N2 -->|Error| N11[Send error response]
+    N11 --> END8[Flow Complete]
+    
+    %% Leave Group Flow
+    O --> O1[Extract userId from payload]
+    O1 --> O2{userId matches ws.userId?}
+    O2 -->|No| O3[Send USER_NOT_FOUND error]
+    O3 --> END9[Flow Complete]
+    O2 -->|Yes| O4[performLeaveGroup]
+    O4 --> O5[groupManager.cleanupUser]
+    O5 --> O6[Broadcast user-left to group members]
+    O6 --> O7[Clear WebSocket user properties]
+    O7 --> END10[Flow Complete]
+    
+    %% Call Request Flow
+    P --> P1[Extract targetPeerId, fromPeerId, fromUsername]
+    P1 --> P2[groupManager.getUserByPeerId]
+    P2 -->|User Found| P3[Forward incoming-call-request to target]
+    P2 -->|User Not Found| P4[Send PEER_NOT_FOUND error]
+    P3 --> END11[Flow Complete]
+    P4 --> END12[Flow Complete]
+    
+    %% Call Response Flow
+    Q --> Q1[Extract accepted, fromPeerId, toPeerId]
+    Q1 --> Q2[groupManager.getUserByPeerId for caller]
+    Q2 -->|User Found| Q3[Forward call-response to original caller]
+    Q2 -->|User Not Found| Q4[Send PEER_NOT_FOUND error]
+    Q3 --> END13[Flow Complete]
+    Q4 --> END14[Flow Complete]
+    
+    %% Update Peer ID Flow
+    R --> R1[Extract peerId from payload]
+    R1 --> R2{ws.userId exists?}
+    R2 -->|No| R3[Send USER_NOT_FOUND error]
+    R3 --> END15[Flow Complete]
+    R2 -->|Yes| R4[groupManager.updateUserPeerId]
+    R4 --> R5{Update successful and in group?}
+    R5 -->|Yes| R6[handlePeerDiscovery]
+    R5 -->|No| END16[Flow Complete]
+    R6 --> END17[Flow Complete]
+    
+    %% Error Handling
+    classDef errorClass fill:#ffeeee,stroke:#ff0000,stroke-width:2px
+    classDef successClass fill:#eeffee,stroke:#00aa00,stroke-width:2px
+    classDef processClass fill:#eeeeff,stroke:#0000aa,stroke-width:2px
+    classDef validationClass fill:#fff0ee,stroke:#ff8800,stroke-width:2px
+    
+    class I,L,M5,N11,O3,P4,Q4,R3,S errorClass
+    class M4,N5,N6,N9,N10,O6,P3,Q3 successClass
+    class B,H,J,K,M2,N2,O4,O5,P2,Q2,R4 processClass
+    class J,M2,N2 validationClass

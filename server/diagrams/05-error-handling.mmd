@@ -1,0 +1,31 @@
+flowchart TD
+    A[Error Occurs] --> B{Error Type}
+    
+    B -->|JSON Parse Error| C[Send INVALID_MESSAGE<br/>Invalid JSON format]
+    B -->|Zod Validation Error| D[Send INVALID_MESSAGE<br/>with validationErrors details]
+    B -->|Group Not Found| E[Send GROUP_NOT_FOUND]
+    B -->|User Not Found| F[Send USER_NOT_FOUND]
+    B -->|Peer Not Found| G[Send PEER_NOT_FOUND]
+    B -->|Connection Error| H[Send CONNECTION_ERROR]
+    B -->|Username/Group Name Invalid| I[Caught by Zod validation]
+    
+    C --> C1[Log error + continue connection]
+    D --> D1[Log validation details + continue]
+    E --> E1[Log + continue connection]
+    F --> F1[Log + continue connection]
+    G --> G1[Log + continue connection]
+    H --> H1[Log + continue connection]
+    I --> D
+    
+    D1 --> J[Client receives detailed field errors]
+    C1 --> K[Client receives generic format error]
+    E1 --> L[Client receives group not found error]
+    F1 --> M[Client receives user not found error]
+    G1 --> N[Client receives peer not found error]
+    H1 --> O[Client receives connection error]
+    
+    classDef errorClass fill:#ffeeee,stroke:#aa0000,stroke-width:2px
+    classDef responseClass fill:#fff5ee,stroke:#cc6600,stroke-width:2px
+    
+    class C,D,E,F,G,H errorClass
+    class J,K,L,M,N,O responseClass

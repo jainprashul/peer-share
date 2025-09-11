@@ -1,0 +1,28 @@
+graph TD
+    A[WebSocket Handler] --> B{Message Type}
+    
+    B -->|user-joined| C[Broadcast to Group Members<br/>excluding sender]
+    B -->|user-left| D[Broadcast to Group Members<br/>excluding leaver]
+    B -->|peer-joined| E[Broadcast to Group Members<br/>excluding new peer]
+    B -->|group-created| F[Send to Creator Only]
+    B -->|group-joined| G[Send to Joiner Only]
+    B -->|incoming-call-request| H[Send to Target Peer Only]
+    B -->|call-response| I[Send to Original Caller Only]
+    B -->|existing-peers| J[Send to New Peer Only]
+    B -->|error| K[Send to Sender Only]
+    
+    C --> C1[All group members see new user]
+    D --> D1[All group members notified of departure]
+    E --> E1[All peers notified for WebRTC discovery]
+    F --> F1[Creator gets group details]
+    G --> G1[Joiner gets group + member list]
+    H --> H1[Target peer gets call request]
+    I --> I1[Caller gets accept/reject response]
+    J --> J1[New peer gets existing peer list]
+    K --> K1[Sender gets error details]
+    
+    classDef broadcastClass fill:#e6f3ff,stroke:#0066cc,stroke-width:2px
+    classDef unicastClass fill:#ffe6f3,stroke:#cc0066,stroke-width:2px
+    
+    class C,D,E,C1,D1,E1 broadcastClass
+    class F,G,H,I,J,K,F1,G1,H1,I1,J1,K1 unicastClass

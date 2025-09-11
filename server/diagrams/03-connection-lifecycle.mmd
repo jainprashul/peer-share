@@ -1,0 +1,27 @@
+stateDiagram-v2
+    [*] --> Connected: Client connects
+    Connected --> Authenticated: Successful group join/create
+    Authenticated --> InGroup: User joins group
+    InGroup --> HasPeerId: User provides peer ID
+    HasPeerId --> CanCall: Ready for P2P calls
+    
+    Connected --> Disconnected: Connection error
+    Authenticated --> Disconnected: Leave group / error
+    InGroup --> Disconnected: Leave group / error  
+    HasPeerId --> Disconnected: Leave group / error
+    CanCall --> Disconnected: Leave group / error
+    
+    Disconnected --> [*]
+    
+    note right of Authenticated
+        WebSocket properties set:
+        - ws.userId
+        - ws.username
+        - ws.groupId
+    end note
+    
+    note right of HasPeerId
+        User can be discovered
+        by other peers for
+        WebRTC connections
+    end note
