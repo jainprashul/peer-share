@@ -1,0 +1,48 @@
+// Client-specific types for Phase 1 POC
+export * from '../../../shared/types';
+
+// Additional client-specific types
+export interface AppState {
+  currentPage: 'landing' | 'group' | 'call';
+  isLoading: boolean;
+  error: string | null;
+}
+
+export interface VideoControlsState {
+  isMuted: boolean;
+  isVideoEnabled: boolean;
+  isScreenSharing: boolean;
+}
+
+export interface MediaPermissions {
+  camera: boolean;
+  microphone: boolean;
+  screen: boolean;
+}
+
+// Component prop types
+export interface LandingPageProps {
+  onCreateGroup: (data: { groupName: string; username: string }) => void;
+  isLoading: boolean;
+  error: string | null;
+}
+
+export interface GroupPageProps {
+  group: import('../../../shared/types').Group | null;
+  members: import('../../../shared/types').User[];
+  currentUser: import('../../../shared/types').User | null;
+  onStartCall: (targetUserId: string) => void;
+  onLeaveGroup: () => void;
+  isLoading: boolean;
+}
+
+export interface CallPageProps {
+  localStream: MediaStream | null;
+  remoteStream: MediaStream | null;
+  isConnecting: boolean;
+  controls: VideoControlsState;
+  onToggleMute: () => void;
+  onToggleVideo: () => void;
+  onToggleScreenShare: () => void;
+  onEndCall: () => void;
+}

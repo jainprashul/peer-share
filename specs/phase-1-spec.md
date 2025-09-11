@@ -28,8 +28,8 @@ Phase 1 focuses on delivering the absolute minimum viable features to validate t
 ### Architecture Overview
 ```
 Frontend (React + TypeScript)
-    ↕ (Socket.IO)
-Backend (Express + Socket.IO + TypeScript)
+    ↕ (Websocket)
+Backend (Express + Websocket + TypeScript)
     ↕ (WebRTC Signaling)
 P2P Connection (Direct between browsers)
 ```
