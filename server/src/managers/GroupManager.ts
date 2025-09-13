@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
-import { Group, User, ErrorCodes } from '../types/index.js';
-import { UsernameSchema, GroupNameSchema } from '../validation/schemas.js';
+import {User, ErrorCodes, Group } from '../types/index';
+import { UsernameSchema, GroupNameSchema } from '../validation/schemas';
 
 /**
  * GroupManager handles in-memory storage and operations for groups and users
@@ -127,13 +127,13 @@ export class GroupManager {
   /**
    * Get all members of a group
    */
-  getGroupMembers(groupId: string): User[] {
+  getGroupMembers(groupId: string) {
     const group = this.groups.get(groupId);
     if (!group) {
       return [];
     }
     
-    return Array.from(group.members.values());
+    return Array.from(group.members.values()) ;
   }
 
   /**

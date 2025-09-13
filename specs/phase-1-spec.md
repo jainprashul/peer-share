@@ -320,8 +320,6 @@ npm 9+
 Modern browser (Chrome 90+, Firefox 88+, Safari 14+)
 
 # Project initialization
-mkdir peershare-poc
-cd peershare-poc
 npm init -y
 mkdir client server shared
 ```
@@ -329,7 +327,7 @@ mkdir client server shared
 ### Package.json (Root)
 ```json
 {
-  "name": "peershare-poc",
+  "name": "peer-share",
   "private": true,
   "workspaces": ["client", "server", "shared"],
   "scripts": {

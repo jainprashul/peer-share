@@ -2,11 +2,11 @@ import express from 'express';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
 import cors from 'cors';
-import { GroupManager } from './managers/GroupManager.js';
-import { WebSocketHandler } from './socket/WebSocketHandler.js';
-import { createRoutes } from './routes/index.js';
-import { UserWebSocket } from './types/index.js';
-import { validateEnvironment, EnvConfig } from './validation/schemas.js';
+import { GroupManager } from './managers/GroupManager';
+import { WebSocketHandler } from './socket/WebSocketHandler';
+import { createRoutes } from './routes/index';
+import { UserWebSocket } from './types/index';
+import { validateEnvironment, EnvConfig } from './validation/schemas';
 
 /**
  * PeerShare POC Server - Phase 1 Implementation

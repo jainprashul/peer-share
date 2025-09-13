@@ -3,7 +3,6 @@
 export interface User {
   id: string;
   username: string;
-  socketId: string;
   groupId: string | null;
   peerId?: string; // PeerJS peer ID for WebRTC connections
 }
@@ -41,23 +40,6 @@ export interface CallState {
   peerId: string | null;
 }
 
-// Socket.IO event types
-export interface ServerToClientEvents {
-  'user-joined': (data: { username: string; peerId: string; userId: string }) => void;
-  'user-left': (data: { username: string; userId: string }) => void;
-  'existing-peers': (peers: Array<{ username: string; peerId: string; userId: string }>) => void;
-  'incoming-call-request': (data: { fromPeerId: string; fromUsername: string }) => void;
-  'group-created': (data: { groupId: string; group: Omit<Group, 'members'> }) => void;
-  'group-joined': (data: { group: Omit<Group, 'members'>; members: User[] }) => void;
-  'error': (data: { message: string }) => void;
-}
-
-export interface ClientToServerEvents {
-  'create-group': (data: { groupName: string; username: string }, callback: (response: { success: boolean; groupId?: string; error?: string }) => void) => void;
-  'join-group': (data: { groupId: string; username: string; peerId: string }, callback: (response: { success: boolean; error?: string }) => void) => void;
-  'leave-group': () => void;
-  'call-request': (data: { targetPeerId: string; fromPeerId: string }) => void;
-}
 
 export interface PeerConfig {
   host: string;
@@ -67,3 +49,156 @@ export interface PeerConfig {
     iceServers: Array<{ urls: string }>;
   };
 }
+
+
+// WebSocket message types for communication
+export interface WebSocketMessage {
+  type: string;
+  payload: any;
+  timestamp?: number;
+}
+
+// Group-related message types
+export interface CreateGroupMessage extends WebSocketMessage {
+  type: 'create-group';
+  payload: {
+    groupName: string;
+    username: string;
+  };
+}
+
+export interface JoinGroupMessage extends WebSocketMessage {
+  type: 'join-group';
+  payload: {
+    groupId: string;
+    username: string;
+    peerId?: string;
+  };
+}
+
+export interface LeaveGroupMessage extends WebSocketMessage {
+  type: 'leave-group';
+  payload: {
+    userId: string;
+  };
+}
+
+// P2P/Call related message types
+export interface CallRequestMessage extends WebSocketMessage {
+  type: 'call-request';
+  payload: {
+    targetPeerId: string;
+    fromPeerId: string;
+    fromUsername: string;
+  };
+}
+
+export interface CallResponseMessage extends WebSocketMessage {
+  type: 'call-response';
+  payload: {
+    accepted: boolean;
+    fromPeerId: string;
+    toPeerId: string;
+  };
+}
+
+// Server response message types
+export interface GroupCreatedMessage extends WebSocketMessage {
+  type: 'group-created';
+  payload: {
+    groupId: string;
+    groupName: string;
+    user: {
+      id: string;
+      username: string;
+    };
+  };
+}
+
+export interface GroupJoinedMessage extends WebSocketMessage {
+  type: 'group-joined';
+  payload: {
+    groupId: string;
+    groupName: string;
+    user: {
+      id: string;
+      username: string;
+    };
+    members: Array<{
+      id: string;
+      username: string;
+      peerId?: string;
+    }>;
+  };
+}
+
+export interface UserJoinedMessage extends WebSocketMessage {
+  type: 'user-joined';
+  payload: {
+    user: {
+      id: string;
+      username: string;
+      peerId?: string;
+    };
+  };
+}
+
+export interface UserLeftMessage extends WebSocketMessage {
+  type: 'user-left';
+  payload: {
+    userId: string;
+    username: string;
+  };
+}
+
+export interface ErrorMessage extends WebSocketMessage {
+  type: 'error';
+  payload: {
+    code: string;
+    message: string;
+    details?: any;
+  };
+}
+
+// Peer discovery message types
+export interface PeerJoinedMessage extends WebSocketMessage {
+  type: 'peer-joined';
+  payload: {
+    peerId: string;
+    username: string;
+  };
+}
+
+export interface ExistingPeersMessage extends WebSocketMessage {
+  type: 'existing-peers';
+  payload: {
+    peers: Array<{
+      peerId: string;
+      username: string;
+    }>;
+  };
+}
+
+export interface IncomingCallRequestMessage extends WebSocketMessage {
+  type: 'incoming-call-request';
+  payload: {
+    fromPeerId: string;
+    fromUsername: string;
+  };
+}
+
+// Union type for all possible message types
+export type AllMessageTypes = 
+  | CreateGroupMessage
+  | JoinGroupMessage 
+  | LeaveGroupMessage
+  | CallRequestMessage
+  | CallResponseMessage
+  | GroupCreatedMessage
+  | GroupJoinedMessage
+  | UserJoinedMessage
+  | UserLeftMessage
+  | ErrorMessage
+  | PeerJoinedMessage
+  | ExistingPeersMessage
+  | IncomingCallRequestMessage;

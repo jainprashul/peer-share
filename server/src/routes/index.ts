@@ -1,7 +1,7 @@
 import express from 'express';
 import { ZodError } from 'zod';
-import { GroupManager } from '../managers/GroupManager.js';
-import { validateGroupParams, GetGroupParams } from '../validation/schemas.js';
+import { GroupManager } from '../managers/GroupManager';
+import { validateGroupParams, GetGroupParams } from '../validation/schemas';
 
 /**
  * REST API routes for PeerShare server

@@ -4,9 +4,9 @@
   "private": true,
   "description": "PeerShare - A peer-to-peer file sharing application",
   "workspaces": [
-    "client",
     "server",
-    "shared"
+    "shared",
+    "client"
   ],
   "scripts": {
     "bootstrap": "yarn install",
