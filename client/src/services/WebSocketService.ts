@@ -22,7 +22,7 @@ export class WebSocketService {
   private isConnecting = false;
   private serverUrl: string;
 
-  constructor(serverUrl: string = 'ws://localhost:8081') {
+  constructor(serverUrl: string = 'ws://localhost:3001') {
     this.serverUrl = serverUrl;
   }
 

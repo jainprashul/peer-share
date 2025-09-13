@@ -1,14 +1,21 @@
 import Layout from './Layout'
-import { BrowserRouter, Route, Routes } from 'react-router'
+import { Route, Routes , unstable_HistoryRouter as UNSAFE_HistoryRouter} from 'react-router'
 import Home from '../pages/home'
-import Group from '../pages/group'
+import Group from '../pages/group'  
 import Call from '../pages/call'
 import Fallback from '../components/Fallback'
+import { history } from './history'
+import { useEffect } from 'react'
+import { appService } from '../services/AppService'
 
 const AppRouter = () => {
+    useEffect(() => {
+        // Initialize the app service when component mounts
+        appService.initialize().catch(console.error);
+    }, []);
     return (
         <Layout>
-            <BrowserRouter>
+            <UNSAFE_HistoryRouter history={history}>
                 <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/group" element={<Group />} />
@@ -16,7 +23,7 @@ const AppRouter = () => {
                     <Route path="/call" element={<Call />} />
                     <Route path="*" element={<Fallback />} />
                 </Routes>
-            </BrowserRouter>
+            </UNSAFE_HistoryRouter>
         </Layout>
     )
 }

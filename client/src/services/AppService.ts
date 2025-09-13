@@ -4,6 +4,7 @@ import { webSocketService } from './WebSocketService';
 import { peerJSService } from './PeerJSService';
 import type { User, Group, ErrorMessage } from '@peer-share/shared';
 import { utilityActions } from '../store/context/utilitySlice';
+import { history } from '../navigations/history';
 
 /**
  * AppService handles the main application logic and coordinates between services
@@ -99,6 +100,7 @@ export class AppService {
     store.dispatch(userActions.setMembers([]));
     store.dispatch(userActions.setInCall(false));
     // store.dispatch(userActions.setCurrentPage('landing'));
+    history.push('/');
 
     // Clean up PeerJS
     peerJSService.destroy();
@@ -127,6 +129,7 @@ export class AppService {
       
       store.dispatch(userActions.setInCall(true));
       // store.dispatch(userActions.setCurrentPage('call'));
+      history.push('/call');
     } catch (error) {
       console.error('Failed to start call:', error);
       store.dispatch(utilityActions.setError('Failed to start call'));
@@ -155,6 +158,7 @@ export class AppService {
       
       store.dispatch(userActions.setInCall(true));
       // store.dispatch(userActions.setCurrentPage('call'));
+      history.push('/call');
     } catch (error) {
       console.error('Failed to answer call:', error);
       store.dispatch(utilityActions.setError('Failed to answer call'));
@@ -171,6 +175,7 @@ export class AppService {
     peerJSService.endCall();
     store.dispatch(userActions.setInCall(false));
     // store.dispatch(userActions.setCurrentPage('group'));
+    history.push('/group');
     store.dispatch(userActions.setRemoteStream(null));
   }
 
@@ -238,6 +243,7 @@ export class AppService {
       store.dispatch(userActions.setCurrentGroup(group));
       store.dispatch(userActions.setMembers([currentUser]));
       // store.dispatch(userActions.setCurrentPage('group'));
+      history.push(`/group/${groupId}`);
     });
 
     // Group joined
@@ -270,6 +276,7 @@ export class AppService {
       store.dispatch(userActions.setCurrentGroup(group));
       store.dispatch(userActions.setMembers([currentUser, ...memberList]));
       // store.dispatch(userActions.setCurrentPage('group'));
+      history.push(`/group/${groupId}`);
     });
 
     // User joined
@@ -382,6 +389,7 @@ export class AppService {
       onCallEnded: () => {
         store.dispatch(userActions.setInCall(false));
         // store.dispatch(userActions.setCurrentPage('group'));
+        history.push('/group');
         store.dispatch(userActions.setRemoteStream(null));
       },
       
