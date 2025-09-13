@@ -1,5 +1,5 @@
+import type { Group } from '@peer-share/shared';
 // Client-specific types for Phase 1 POC
-export * from '../../../shared/types';
 
 // Additional client-specific types
 export interface AppState {
@@ -25,6 +25,7 @@ export interface LandingPageProps {
   onCreateGroup: (data: { groupName: string; username: string }) => void;
   isLoading: boolean;
   error: string | null;
+  group?: Group | null;
 }
 
 export interface GroupPageProps {

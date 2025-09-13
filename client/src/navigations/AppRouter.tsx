@@ -12,6 +12,7 @@ const AppRouter = () => {
                 <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/group" element={<Group />} />
+                    <Route path="/group/:groupId" element={<Group />} />
                     <Route path="/call" element={<Call />} />
                     <Route path="*" element={<Fallback />} />
                 </Routes>

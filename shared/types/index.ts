@@ -187,6 +187,13 @@ export interface IncomingCallRequestMessage extends WebSocketMessage {
   };
 }
 
+export interface UpdatePeerIdMessage extends WebSocketMessage {
+  type: 'update-peer-id';
+  payload: {
+    peerId: string;
+  };
+}
+
 // Union type for all possible message types
 export type AllMessageTypes = 
   | CreateGroupMessage
@@ -201,4 +208,5 @@ export type AllMessageTypes =
   | ErrorMessage
   | PeerJoinedMessage
   | ExistingPeersMessage
-  | IncomingCallRequestMessage;
+  | IncomingCallRequestMessage
+  | UpdatePeerIdMessage;
