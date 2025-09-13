@@ -1,0 +1,15 @@
+{
+  "name": "@peer-share/shared",
+  "version": "1.0.0",
+  "description": "Shared types and utilities for PeerShare",
+  "main": "types/index.ts",
+  "types": "types/index.ts",
+  "scripts": {
+    "build": "echo 'No build step needed for shared types'",
+    "dev": "echo 'No dev step needed for shared types'",
+    "lint": "echo 'No lint step needed for shared types'"
+  },
+  "devDependencies": {
+    "typescript": "^5.1.6"
+  }
+}
