@@ -12,6 +12,7 @@ import {
   CallResponseMessage,
   UpdatePeerIdMessage
 } from '../validation/schemas';
+import { logger } from '../utils';
 
 /**
  * WebSocketHandler manages WebSocket connections and message routing
@@ -28,7 +29,7 @@ export class WebSocketHandler {
    * Handle new WebSocket connection
    */
   handleConnection(ws: UserWebSocket): void {
-    console.log('New WebSocket connection established');
+    logger.log('New WebSocket connection established');
 
     // Set up connection properties
     ws.isAlive = true;
@@ -68,7 +69,7 @@ export class WebSocketHandler {
     try {
       // Validate incoming message with Zod
       const message: IncomingMessage = validateMessage(rawMessage);
-      console.log(`Received validated message type: ${message.type}`);
+      logger.log(`Received validated message type: ${message.type}`);
 
       switch (message.type) {
         case 'create-group':
@@ -249,7 +250,7 @@ export class WebSocketHandler {
         }
       });
 
-      console.log(`Call request from ${fromUsername} (${fromPeerId}) to ${targetUser.username} (${targetPeerId})`);
+      logger.log(`Call request from ${fromUsername} (${fromPeerId}) to ${targetUser.username} (${targetPeerId})`);
 
     } catch (error: any) {
       this.sendError(ws, ErrorCodes.CONNECTION_ERROR, 'Failed to forward call request');
@@ -280,7 +281,7 @@ export class WebSocketHandler {
         }
       });
 
-      console.log(`Call ${accepted ? 'accepted' : 'rejected'} between ${fromPeerId} and ${toPeerId}`);
+      logger.log(`Call ${accepted ? 'accepted' : 'rejected'} between ${fromPeerId} and ${toPeerId}`);
 
     } catch (error: any) {
       this.sendError(ws, ErrorCodes.CONNECTION_ERROR, 'Failed to forward call response');
@@ -339,7 +340,7 @@ export class WebSocketHandler {
    * Handle WebSocket disconnection
    */
   private handleDisconnection(ws: UserWebSocket): void {
-    console.log(`WebSocket disconnected: ${ws.username || 'Unknown'}`);
+    logger.log(`WebSocket disconnected: ${ws.username || 'Unknown'}`);
     this.performLeaveGroup(ws);
   }
 
@@ -412,7 +413,7 @@ export class WebSocketHandler {
     const interval = setInterval(() => {
       wss.clients.forEach((ws: UserWebSocket) => {
         if (!ws.isAlive) {
-          console.log('Terminating inactive connection');
+          logger.log('Terminating inactive connection');
           this.handleDisconnection(ws);
           ws.terminate();
           return;

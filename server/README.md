@@ -393,7 +393,7 @@ wscat -c ws://localhost:3001
 2. Connect to WebSocket:
 ```javascript
 const ws = new WebSocket('ws://localhost:3001');
-ws.onmessage = (event) => console.log('Received:', JSON.parse(event.data));
+ws.onmessage = (event) => logger.log('Received:', JSON.parse(event.data));
 
 // Valid message
 ws.send(JSON.stringify({
@@ -463,13 +463,13 @@ const ws = new WebSocket('ws://localhost:3001');
 
 // Handle connection open
 ws.onopen = () => {
-  console.log('Connected to server');
+  logger.log('Connected to server');
 };
 
 // Handle incoming messages
 ws.onmessage = (event) => {
   const message = JSON.parse(event.data);
-  console.log('Received:', message);
+  logger.log('Received:', message);
   
   switch (message.type) {
     case 'group-created':

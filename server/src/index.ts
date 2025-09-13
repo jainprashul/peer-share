@@ -7,13 +7,12 @@ import { WebSocketHandler } from './socket/WebSocketHandler';
 import { createRoutes } from './routes/index';
 import { UserWebSocket } from './types/index';
 import { validateEnvironment, EnvConfig } from './validation/schemas';
-import Logger from '@peer-share/shared/utils/Logger';
+import { logger } from './utils';
 
 /**
  * PeerShare POC Server - Phase 1 Implementation
  * WebSocket-based signaling server for P2P video calling
  */
-const logger = Logger.getInstance();
 // Validate and parse environment variables with Zod
 const config: EnvConfig = validateEnvironment(process.env);
 const { PORT, WS_PORT, NODE_ENV, ALLOWED_ORIGINS } = config;
@@ -64,7 +63,7 @@ logger.log(`WebSocket server starting on port ${WS_PORT}`);
 // Handle WebSocket connections
 wss.on('connection', (ws: UserWebSocket, req) => {
   const clientIp = req.socket.remoteAddress;
-  console.log(`New WebSocket connection from ${clientIp}`);
+  logger.log(`New WebSocket connection from ${clientIp}`);
   
   websocketHandler.handleConnection(ws);
 });

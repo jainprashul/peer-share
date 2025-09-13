@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import {User, ErrorCodes, Group } from '../types/index';
 import { UsernameSchema, GroupNameSchema } from '../validation/schemas';
+import { logger } from '../utils';
 
 /**
  * GroupManager handles in-memory storage and operations for groups and users
@@ -44,7 +45,7 @@ export class GroupManager {
     this.groups.set(groupId, group);
     this.users.set(userId, user);
 
-    console.log(`Group created: ${groupId} with creator: ${validatedUsername}`);
+    logger.log(`Group created: ${groupId} with creator: ${validatedUsername}`);
     
     return { groupId, user };
   }
@@ -93,7 +94,7 @@ export class GroupManager {
     group.members.set(userId, user);
     this.users.set(userId, user);
 
-    console.log(`User ${finalUsername} joined group: ${groupId}`);
+    logger.log(`User ${finalUsername} joined group: ${groupId}`);
     
     return user;
   }
@@ -114,12 +115,12 @@ export class GroupManager {
       // Clean up empty groups
       if (group.members.size === 0) {
         this.groups.delete(group.id);
-        console.log(`Empty group ${group.id} removed`);
+        logger.log(`Empty group ${group.id} removed`);
       }
     }
 
     this.users.delete(userId);
-    console.log(`User ${user.username} left group: ${user.groupId}`);
+    logger.log(`User ${user.username} left group: ${user.groupId}`);
     
     return { group: group || null, user };
   }
@@ -160,7 +161,7 @@ export class GroupManager {
     }
     
     user.peerId = peerId;
-    console.log(`Updated peer ID for user ${user.username}: ${peerId}`);
+    logger.log(`Updated peer ID for user ${user.username}: ${peerId}`);
     return true;
   }
 
