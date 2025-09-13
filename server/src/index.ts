@@ -7,12 +7,13 @@ import { WebSocketHandler } from './socket/WebSocketHandler';
 import { createRoutes } from './routes/index';
 import { UserWebSocket } from './types/index';
 import { validateEnvironment, EnvConfig } from './validation/schemas';
+import Logger from '@peer-share/shared/utils/Logger';
 
 /**
  * PeerShare POC Server - Phase 1 Implementation
  * WebSocket-based signaling server for P2P video calling
  */
-
+const logger = Logger.getInstance();
 // Validate and parse environment variables with Zod
 const config: EnvConfig = validateEnvironment(process.env);
 const { PORT, WS_PORT, NODE_ENV, ALLOWED_ORIGINS } = config;
@@ -58,7 +59,7 @@ const wss = new WebSocketServer({
   }
 });
 
-console.log(`WebSocket server starting on port ${WS_PORT}`);
+logger.log(`WebSocket server starting on port ${WS_PORT}`);
 
 // Handle WebSocket connections
 wss.on('connection', (ws: UserWebSocket, req) => {
@@ -73,7 +74,7 @@ websocketHandler.startHealthCheck(wss);
 
 // Start HTTP server
 server.listen(PORT, () => {
-  console.log(`
+  logger.log(`
 🚀 PeerShare POC Server Started
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 HTTP Server:     http://localhost:${PORT}
@@ -85,22 +86,22 @@ Environment:     ${NODE_ENV}
 
 // Graceful shutdown handling
 const shutdown = (signal: string) => {
-  console.log(`\n${signal} received. Shutting down gracefully...`);
+  logger.log(`\n${signal} received. Shutting down gracefully...`);
   
   // Close WebSocket server
   wss.close(() => {
-    console.log('WebSocket server closed');
+    logger.log('WebSocket server closed');
   });
   
   // Close HTTP server
   server.close(() => {
-    console.log('HTTP server closed');
+    logger.log('HTTP server closed');
     process.exit(0);
   });
   
   // Force exit after 10 seconds
   setTimeout(() => {
-    console.error('Could not close connections in time, forcefully shutting down');
+    logger.error('Could not close connections in time, forcefully shutting down');
     process.exit(1);
   }, 10000);
 };
@@ -110,12 +111,12 @@ process.on('SIGINT', () => shutdown('SIGINT'));
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error);
+  logger.error('Uncaught Exception:', error);
   shutdown('UNCAUGHT_EXCEPTION');
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
   shutdown('UNHANDLED_REJECTION');
 });
 
