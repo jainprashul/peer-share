@@ -3,6 +3,7 @@ import CallPage from './CallPage';
 function index() {
     return (
         <CallPage
+
             localStream={null}
             remoteStream={null}
             isConnecting={false}

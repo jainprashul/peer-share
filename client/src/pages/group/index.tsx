@@ -1,6 +1,8 @@
+import { useAppSelector } from '../../store/store';
 import GroupPage from './GroupPage';
 
 function index() {
+    const loading = useAppSelector(state => state.utility.loading);
     return (
         <GroupPage
             group={null}
@@ -14,7 +16,7 @@ function index() {
             onLeaveGroup={() => {
                 //   setAppState(prev => ({ ...prev, currentPage: 'landing' }));
             }}
-            isLoading={false}
+            isLoading={loading}
         />
     )
 }
