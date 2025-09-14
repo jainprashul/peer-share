@@ -220,6 +220,14 @@ export class AppService {
    * Set up WebSocket message handlers
    */
   private setupWebSocketHandlers(): void {
+
+    // Connection established
+    webSocketService.on('connection-established', (message) => {
+      if (message.type !== 'connection-established') return;
+      const { userId, username, groupId } = message.payload;
+      store.dispatch(userActions.setCurrentUser({ id: userId, username, groupId}));
+    });
+
     // Group created
     webSocketService.on('group-created', (message) => {
       if (message.type !== 'group-created') return;

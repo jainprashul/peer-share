@@ -64,6 +64,10 @@ logger.log(`WebSocket server starting on port ${WS_PORT}`);
 wss.on('connection', (ws: UserWebSocket, req) => {
   const clientIp = req.socket.remoteAddress;
   logger.log(`New WebSocket connection from ${clientIp}`);
+
+  // Give the client a unique ID
+  const clientId = `client-${Math.random().toString(36).substring(2, 15)}`;
+  ws.userId = clientId;
   
   websocketHandler.handleConnection(ws);
 });

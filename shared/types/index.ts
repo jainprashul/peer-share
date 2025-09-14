@@ -194,6 +194,15 @@ export interface UpdatePeerIdMessage extends WebSocketMessage {
   };
 }
 
+export interface ConnectionEstablishedMessage extends WebSocketMessage {
+  type: 'connection-established';
+  payload: {
+    userId: string;
+    username: string;
+    groupId: string;
+  };
+}
+
 // Union type for all possible message types
 export type AllMessageTypes = 
   | CreateGroupMessage
@@ -209,4 +218,5 @@ export type AllMessageTypes =
   | PeerJoinedMessage
   | ExistingPeersMessage
   | IncomingCallRequestMessage
-  | UpdatePeerIdMessage;
+  | UpdatePeerIdMessage
+  | ConnectionEstablishedMessage;
