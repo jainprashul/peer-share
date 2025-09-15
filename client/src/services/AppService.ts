@@ -4,7 +4,7 @@ import { webSocketService } from './WebSocketService';
 import { peerJSService } from './PeerJSService';
 import type { User, Group, ErrorMessage } from '@peer-share/shared';
 import { utilityActions } from '../store/context/utilitySlice';
-import { history } from '../navigations/history';
+import { history } from '../navigation/history';
 
 /**
  * AppService handles the main application logic and coordinates between services
