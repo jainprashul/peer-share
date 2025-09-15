@@ -16,13 +16,12 @@ function index() {
     const currentUser = useAppSelector(state => state.user.currentUser);
 
     useEffect(() => {
-        // Initialize PeerJS first
-        const initializePeer = async () => {
-            await peerJSService.initializePeer(currentUser?.id!)
+        if (currentUser?.id && !currentUser?.peerId) {
+            peerJSService.initializePeer(currentUser?.id!);
         }
-        if (currentUser?.id) {
-            initializePeer();
-        }
+    }, [currentUser?.id, currentUser?.peerId]);
+
+    useEffect(() => {
         // If we have a group ID but no current group, show username form
         if (groupId && !group && !currentUser?.id) {
             setShowUsernameForm(true);
@@ -33,7 +32,7 @@ function index() {
         if (!groupId) return;
         
         try {
-            await appService.joinGroup(groupId, username);
+            await appService.joinGroup(groupId, username, currentUser?.peerId);
             setShowUsernameForm(false);
         } catch (error) {
             console.error('Failed to join group:', error);

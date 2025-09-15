@@ -14,26 +14,26 @@ export class GroupManager {
   /**
    * Create a new group with the specified name and creator
    */
-  createGroup(name: string, creatorUsername: string, websocket: UserWebSocket): { groupId: string; user: User } {
+  createGroup(name: string, creatorUsername: string, websocket: UserWebSocket, id?: string): { groupId: string; user: User } {
     // Validate inputs with Zod
     const validatedGroupName = GroupNameSchema.parse(name);
     const validatedUsername = UsernameSchema.parse(creatorUsername);
 
-    const groupId = 'group_' + uuidv4();
+    const groupId = id ?? 'group_' + uuidv4();
     const userId = websocket.userId!;
     // Create user
     const user: User = {
       id: userId,
       username: validatedUsername,
       websocket,
-      groupId
+      groupId,
     };
 
     // Create group with empty members map
     const group: Group = {
       id: groupId,
       name: validatedGroupName,
-      createdAt: new Date(),
+      createdAt: Date.now(),
       members: new Map()
     };
 
@@ -56,11 +56,17 @@ export class GroupManager {
     // Validate inputs - groupId validation happens at WebSocket handler level
     const validatedUsername = UsernameSchema.parse(username);
 
-    const group = this.groups.get(groupId);
+    let group = this.groups.get(groupId);
+    if (!group) {
+      // create a new group
+      this.createGroup('New Group_' + uuidv4(), username, websocket, groupId);
+      group = this.groups.get(groupId);
+    }
+
     if (!group) {
       throw new Error(ErrorCodes.GROUP_NOT_FOUND);
     }
-
+    
     // Check if username is already taken in this group
     let finalUsername = validatedUsername;
     const existingUserWithName = Array.from(group.members.values())

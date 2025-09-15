@@ -1,4 +1,4 @@
-import type { Group } from '@peer-share/shared';
+import type { Group, User } from '@peer-share/shared';
 // Client-specific types for Phase 1 POC
 
 // Additional client-specific types
@@ -29,9 +29,9 @@ export interface LandingPageProps {
 }
 
 export interface GroupPageProps {
-  group: import('../../../shared/types').Group | null;
-  members: import('../../../shared/types').User[];
-  currentUser: import('../../../shared/types').User | null;
+  group: Group | null;
+  members: User[];
+  currentUser: User | null;
   onStartCall: (targetUserId: string) => void;
   onLeaveGroup: () => void;
   isLoading: boolean;

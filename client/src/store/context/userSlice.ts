@@ -49,11 +49,17 @@ const userSlice = createSlice({
     
     // User and group management
     setCurrentUser: (state, action: PayloadAction<User | null>) => {
-      state.currentUser = action.payload;
+      if(action.payload === null) return;
+      state.currentUser = { ...state.currentUser, ...action.payload };
     },
     
     setCurrentGroup: (state, action: PayloadAction<Group | null>) => {
       state.currentGroup = action.payload;
+    },
+
+    setPeerId: (state, action: PayloadAction<string | undefined>) => {
+      if (!state.currentUser) return;
+      state.currentUser.peerId = action.payload;
     },
     
     setMembers: (state, action: PayloadAction<User[]>) => {

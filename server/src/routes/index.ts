@@ -42,7 +42,7 @@ export function createRoutes(groupManager: GroupManager): express.Router {
       res.json({
         id: group.id,
         name: group.name,
-        createdAt: group.createdAt.toISOString(),
+        createdAt: group.createdAt,
         memberCount: group.members.size,
         exists: true
       });

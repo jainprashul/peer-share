@@ -10,7 +10,7 @@ export interface User {
 export interface Group {
   id: string;
   name: string;
-  createdAt: Date;
+  createdAt: number;
   members: Map<string, User>;
 }
 

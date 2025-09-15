@@ -64,7 +64,7 @@ export class AppService {
   /**
    * Join an existing group
    */
-  async joinGroup(groupId: string, username: string): Promise<void> {
+  async joinGroup(groupId: string, username: string, peerId?: string): Promise<void> {
     try {
       store.dispatch(utilityActions.setLoading(true));
       store.dispatch(utilityActions.setError(null));
@@ -96,7 +96,6 @@ export class AppService {
     store.dispatch(userActions.setCurrentGroup(null));
     store.dispatch(userActions.setMembers([]));
     store.dispatch(userActions.setInCall(false));
-    // store.dispatch(userActions.setCurrentPage('landing'));
     history.navigate?.('/');
 
     // Clean up PeerJS
@@ -123,10 +122,9 @@ export class AppService {
 
       // Start the call
       await peerJSService.startCall(targetUser.peerId);
+      webSocketService.requestCall(targetUser.peerId, state.user.currentUser?.peerId!, state.user.currentUser?.username!);
       
       store.dispatch(userActions.setInCall(true));
-      // store.dispatch(userActions.setCurrentPage('call'));
-      history.navigate?.('/call');
     } catch (error) {
       console.error('Failed to start call:', error);
       store.dispatch(utilityActions.setError('Failed to start call'));
@@ -171,8 +169,9 @@ export class AppService {
   endCall(): void {
     peerJSService.endCall();
     store.dispatch(userActions.setInCall(false));
-    // store.dispatch(userActions.setCurrentPage('group'));
-    history.navigate?.('/group');
+    history.navigate?.(-1);
+    store.dispatch(userActions.setScreenSharing(false));
+    store.dispatch(userActions.setLocalStream(null));
     store.dispatch(userActions.setRemoteStream(null));
   }
 
@@ -233,7 +232,7 @@ export class AppService {
       const group: Group = {
         id: groupId,
         name: groupName,
-        createdAt: new Date(),
+        createdAt: Date.now(),
         members: new Map()
       };
       
@@ -258,7 +257,7 @@ export class AppService {
       const group: Group = {
         id: groupId,
         name: groupName,
-        createdAt: new Date(),
+        createdAt: Date.now(),
         members: new Map()
       };
       
@@ -299,6 +298,8 @@ export class AppService {
     // User left
     webSocketService.on('user-left', (message) => {
       if (message.type !== 'user-left') return;
+      // Discard the call if the user left
+      this.endCall();
       const { userId } = message.payload;
       store.dispatch(userActions.removeMember(userId));
     });
@@ -327,7 +328,7 @@ export class AppService {
       // Update members with peer IDs
       const state = store.getState();
       const updatedMembers = state.user.members.map((member: User) => {
-        const peer = peers.find((p: any) => p.username === member.username);
+        const peer = peers.find((p) => p.username === member.username);
         return peer ? { ...member, peerId: peer.peerId } : member;
       });
       
@@ -358,7 +359,7 @@ export class AppService {
     // Call response
     webSocketService.on('call-response', (message) => {
       if (message.type !== 'call-response') return;
-      const { accepted, fromPeerId, toPeerId } = message.payload;
+      const { accepted } = message.payload;
       if (accepted) {
         // Make the call, navigate to call page
         history.navigate?.('/call');
@@ -402,8 +403,6 @@ export class AppService {
       
       onCallEnded: () => {
         store.dispatch(userActions.setInCall(false));
-        // store.dispatch(userActions.setCurrentPage('group'));
-        history.navigate?.('/group');
         store.dispatch(userActions.setRemoteStream(null));
       },
       

@@ -1,5 +1,7 @@
 import Peer, { type MediaConnection } from 'peerjs';
 import { webSocketService } from './WebSocketService';
+import { userActions } from '../store/context/userSlice';
+import store from '../store/store';
 
 export interface PeerJSEvents {
   onLocalStream?: (stream: MediaStream) => void;
@@ -8,6 +10,8 @@ export interface PeerJSEvents {
   onCallEnded?: () => void;
   onError?: (error: Error) => void;
   onIncomingCall?: (fromPeerId: string, fromUsername: string) => void;
+  onScreenSharingStarted?: () => void;
+  onScreenSharingEnded?: () => void;
 }
 
 /**
@@ -19,6 +23,8 @@ export class PeerJSService {
   private mediaConnection: MediaConnection | null = null;
   private localStream: MediaStream | null = null;
   private remoteStream: MediaStream | null = null;
+  private screenStream: MediaStream | null = null;
+  private isScreenSharing: boolean = false;
   private currentPeerId: string | null = null;
   private events: PeerJSEvents = {};
 
@@ -43,7 +49,7 @@ export class PeerJSService {
         //     ]
         //   }
         // });
-        this.peer = new Peer(userId);
+        this.peer = new Peer();
 
         this.peer.on('open', (peerId: string) => {
           console.log('PeerJS initialized with ID:', peerId);
@@ -51,6 +57,8 @@ export class PeerJSService {
           
           // Notify server about our peer ID
           webSocketService.updatePeerId(peerId);
+          // Save 
+          store.dispatch(userActions.setPeerId(peerId));
           resolve(peerId);
         });
 
@@ -132,37 +140,51 @@ export class PeerJSService {
    * End the current call
    */
   endCall(): void {
+    if (this.isScreenSharing) {
+      this.stopScreenShare();
+    }
+    if (this.screenStream) {
+      this.screenStream.getTracks().forEach(track => track.stop());
+      this.screenStream = null;
+    }
+    if (this.localStream) {
+      this.localStream.getTracks().forEach(track => track.stop());
+      this.localStream = null;
+    }
+    if (this.remoteStream) {
+      this.remoteStream.getTracks().forEach(track => track.stop());
+      this.remoteStream = null;
+    }
     if (this.mediaConnection) {
       this.mediaConnection.close();
       this.mediaConnection = null;
     }
-    
-    this.remoteStream = null;
     this.events.onCallEnded?.();
   }
-
   /**
    * Start screen sharing
    */
   async startScreenShare(): Promise<MediaStream> {
     try {
-      const screenStream = await navigator.mediaDevices.getDisplayMedia({
+      this.screenStream = await navigator.mediaDevices.getDisplayMedia({
         video: true,
         audio: true
       });
 
       // Replace the video track in the current call
       if (this.mediaConnection && this.localStream) {
-        const videoTrack = screenStream.getVideoTracks()[0];
+        const videoTrack = this.screenStream.getVideoTracks()[0];
         const sender = this.mediaConnection.peerConnection.getSenders()
           .find(s => s.track && s.track.kind === 'video');
-        
+
+        this.isScreenSharing = true;
+        this.events.onScreenSharingStarted?.();
         if (sender) {
           await sender.replaceTrack(videoTrack);
         }
       }
 
-      return screenStream;
+      return this.screenStream;
     } catch (error) {
       console.error('Error starting screen share:', error);
       throw error;
@@ -177,7 +199,9 @@ export class PeerJSService {
       const videoTrack = this.localStream.getVideoTracks()[0];
       const sender = this.mediaConnection.peerConnection.getSenders()
         .find(s => s.track && s.track.kind === 'video');
-      
+
+      this.isScreenSharing = false;
+      this.events.onScreenSharingEnded?.();
       if (sender && videoTrack) {
         await sender.replaceTrack(videoTrack);
       }
@@ -241,6 +265,11 @@ export class PeerJSService {
     if (this.localStream) {
       this.localStream.getTracks().forEach(track => track.stop());
       this.localStream = null;
+    }
+
+    if (this.screenStream) {
+      this.screenStream.getTracks().forEach(track => track.stop());
+      this.screenStream = null;
     }
 
     if (this.peer) {

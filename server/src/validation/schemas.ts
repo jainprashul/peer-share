@@ -18,10 +18,10 @@ export const GroupNameSchema = z.string()
   .transform(s => s.trim());
 
 export const GroupIdSchema = z.string()
-  .uuid('Invalid group ID format');
+  .regex(/^group_[a-zA-Z0-9_-]+$/, 'Invalid group ID format');
 
 export const UserIdSchema = z.string()
-  .uuid('Invalid user ID format');
+  .regex(/^user_[a-zA-Z0-9_-]+$/, 'Invalid user ID format');
 
 export const PeerIdSchema = z.string()
   .min(1, 'Peer ID cannot be empty')

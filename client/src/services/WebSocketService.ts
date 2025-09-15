@@ -8,6 +8,9 @@ import type {
   UpdatePeerIdMessage
 } from '@peer-share/shared';
 
+const env = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+const  url = `${env}${window.location.hostname}:3001`;
+
 export type WebSocketEventHandler = (message: AllMessageTypes) => void;
 
 /**
@@ -22,7 +25,7 @@ export class WebSocketService {
   private isConnecting = false;
   private serverUrl: string;
 
-  constructor(serverUrl: string = 'ws://localhost:3001') {
+  constructor(serverUrl: string = url) {
     this.serverUrl = serverUrl;
   }
 

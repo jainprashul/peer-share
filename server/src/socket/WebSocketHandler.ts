@@ -334,8 +334,7 @@ export class WebSocketHandler {
     }, user.id);
 
     // Send existing peers to the new peer
-    const existingPeers = this.groupManager.getGroupPeers(groupId)
-      .filter(peer => peer.peerId !== user.peerId);
+    const existingPeers = this.groupManager.getGroupPeers(groupId);
 
     this.sendMessage(user.websocket, {
       type: 'existing-peers',
