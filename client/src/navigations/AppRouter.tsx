@@ -1,31 +1,40 @@
 import Layout from './Layout'
-import { Route, Routes , unstable_HistoryRouter as UNSAFE_HistoryRouter} from 'react-router'
+import { BrowserRouter, Route, Routes, useLocation, useNavigate, useParams} from 'react-router'
 import Home from '../pages/home'
 import Group from '../pages/group'  
 import Call from '../pages/call'
 import Fallback from '../components/Fallback'
 import { history } from './history'
 import { useEffect } from 'react'
-import { appService } from '../services/AppService'
+import { onAppStart } from './onAppStart'
 
 const AppRouter = () => {
     useEffect(() => {
-        // Initialize the app service when component mounts
-        appService.initialize().catch(console.error);
+        onAppStart();
     }, []);
+
     return (
         <Layout>
-            <UNSAFE_HistoryRouter history={history}>
-                <Routes>
-                    <Route path="/" element={<Home />} />
-                    <Route path="/group" element={<Group />} />
-                    <Route path="/group/:groupId" element={<Group />} />
-                    <Route path="/call" element={<Call />} />
-                    <Route path="*" element={<Fallback />} />
-                </Routes>
-            </UNSAFE_HistoryRouter>
+            <BrowserRouter>
+                <AppRouterContent />
+            </BrowserRouter>
         </Layout>
     )
 }
 
 export default AppRouter
+
+function AppRouterContent() {
+    history.navigate = useNavigate();
+    history.location = useLocation();
+    history.params = useParams();
+    return (
+        <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/group" element={<Group />} />
+            <Route path="/group/:groupId" element={<Group />} />
+            <Route path="/call" element={<Call />} />
+            <Route path="*" element={<Fallback />} />
+        </Routes>
+    )
+}

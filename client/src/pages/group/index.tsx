@@ -3,6 +3,7 @@ import { useParams } from 'react-router';
 import { useAppSelector } from '../../store/store';
 import { appService } from '../../services/AppService';
 import GroupPage from './GroupPage';
+import { peerJSService } from '../../services/PeerJSService';
 
 function index() {
     const { groupId } = useParams<{ groupId?: string }>();
@@ -15,11 +16,18 @@ function index() {
     const currentUser = useAppSelector(state => state.user.currentUser);
 
     useEffect(() => {
+        // Initialize PeerJS first
+        const initializePeer = async () => {
+            await peerJSService.initializePeer(currentUser?.id!)
+        }
+        if (currentUser?.id) {
+            initializePeer();
+        }
         // If we have a group ID but no current group, show username form
-        if (groupId && !group && !currentUser) {
+        if (groupId && !group && !currentUser?.id) {
             setShowUsernameForm(true);
         }
-    }, [groupId, group, currentUser]);
+    }, [groupId, group, currentUser?.id]);
 
     const handleJoinGroup = async (username: string) => {
         if (!groupId) return;

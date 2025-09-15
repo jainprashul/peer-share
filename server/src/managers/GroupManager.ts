@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import {User, ErrorCodes, Group } from '../types/index';
+import {User, ErrorCodes, Group, UserWebSocket } from '../types/index';
 import { UsernameSchema, GroupNameSchema } from '../validation/schemas';
 import { logger } from '../utils';
 
@@ -14,14 +14,13 @@ export class GroupManager {
   /**
    * Create a new group with the specified name and creator
    */
-  createGroup(name: string, creatorUsername: string, websocket: any): { groupId: string; user: User } {
+  createGroup(name: string, creatorUsername: string, websocket: UserWebSocket): { groupId: string; user: User } {
     // Validate inputs with Zod
     const validatedGroupName = GroupNameSchema.parse(name);
     const validatedUsername = UsernameSchema.parse(creatorUsername);
 
-    const groupId = uuidv4();
-    const userId = uuidv4();
-    
+    const groupId = 'group_' + uuidv4();
+    const userId = websocket.userId!;
     // Create user
     const user: User = {
       id: userId,
@@ -53,7 +52,7 @@ export class GroupManager {
   /**
    * Join an existing group
    */
-  joinGroup(groupId: string, username: string, websocket: any, peerId?: string): User {
+  joinGroup(groupId: string, username: string, websocket: UserWebSocket, peerId?: string): User {
     // Validate inputs - groupId validation happens at WebSocket handler level
     const validatedUsername = UsernameSchema.parse(username);
 
@@ -79,7 +78,7 @@ export class GroupManager {
       finalUsername = newUsername;
     }
 
-    const userId = uuidv4();
+    const userId = websocket.userId!;
     
     // Create user
     const user: User = {

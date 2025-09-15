@@ -1,3 +1,13 @@
-import { UNSAFE_createBrowserHistory } from "react-router";
+import type { Location, Params, NavigateFunction } from 'react-router';
 
-export const history = UNSAFE_createBrowserHistory();
+type History = {
+  navigate: NavigateFunction | null;
+  location: Location | null;
+  params: Readonly<Params> | null;
+}
+
+export const history: History = {
+  navigate: null,
+  location: null,
+  params: null
+}

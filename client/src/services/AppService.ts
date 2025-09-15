@@ -69,9 +69,6 @@ export class AppService {
       store.dispatch(utilityActions.setLoading(true));
       store.dispatch(utilityActions.setError(null));
 
-      // Initialize PeerJS first
-      const peerId = await peerJSService.initializePeer(username);
-      
       // Join group with peer ID
       webSocketService.joinGroup(groupId, username, peerId);
     } catch (error) {
@@ -100,7 +97,7 @@ export class AppService {
     store.dispatch(userActions.setMembers([]));
     store.dispatch(userActions.setInCall(false));
     // store.dispatch(userActions.setCurrentPage('landing'));
-    history.push('/');
+    history.navigate?.('/');
 
     // Clean up PeerJS
     peerJSService.destroy();
@@ -129,7 +126,7 @@ export class AppService {
       
       store.dispatch(userActions.setInCall(true));
       // store.dispatch(userActions.setCurrentPage('call'));
-      history.push('/call');
+      history.navigate?.('/call');
     } catch (error) {
       console.error('Failed to start call:', error);
       store.dispatch(utilityActions.setError('Failed to start call'));
@@ -158,8 +155,8 @@ export class AppService {
       
       store.dispatch(userActions.setInCall(true));
       // store.dispatch(userActions.setCurrentPage('call'));
-      history.push('/call');
-    } catch (error) {
+      history.navigate?.('/call');
+    } catch (error) { 
       console.error('Failed to answer call:', error);
       store.dispatch(utilityActions.setError('Failed to answer call'));
       throw error;
@@ -175,7 +172,7 @@ export class AppService {
     peerJSService.endCall();
     store.dispatch(userActions.setInCall(false));
     // store.dispatch(userActions.setCurrentPage('group'));
-    history.push('/group');
+    history.navigate?.('/group');
     store.dispatch(userActions.setRemoteStream(null));
   }
 
@@ -250,8 +247,7 @@ export class AppService {
       store.dispatch(userActions.setCurrentUser(currentUser));
       store.dispatch(userActions.setCurrentGroup(group));
       store.dispatch(userActions.setMembers([currentUser]));
-      // store.dispatch(userActions.setCurrentPage('group'));
-      history.push(`/group/${groupId}`);
+      history.navigate?.(`/group/${groupId}`);
     });
 
     // Group joined
@@ -283,8 +279,7 @@ export class AppService {
       store.dispatch(userActions.setCurrentUser(currentUser));
       store.dispatch(userActions.setCurrentGroup(group));
       store.dispatch(userActions.setMembers([currentUser, ...memberList]));
-      // store.dispatch(userActions.setCurrentPage('group'));
-      history.push(`/group/${groupId}`);
+      history.navigate?.(`/group/${groupId}`);
     });
 
     // User joined
@@ -345,10 +340,11 @@ export class AppService {
       const { fromPeerId, fromUsername } = message.payload;
       
       // Show call notification (you might want to add a modal for this)
-      const shouldAnswer = window.confirm(`Incoming call from ${fromUsername}. Answer?`);
+      const shouldAnswer = confirm(`Incoming call from ${fromUsername}. Answer?`);
       
       if (shouldAnswer) {
         this.answerCall();
+        webSocketService.respondToCall(true, fromPeerId, store.getState().user.currentUser?.peerId || '');
       } else {
         // Reject the call
         const state = store.getState();
@@ -356,6 +352,16 @@ export class AppService {
         if (currentUser && currentUser.peerId) {
           webSocketService.respondToCall(false, fromPeerId, currentUser.peerId);
         }
+      }
+    });
+
+    // Call response
+    webSocketService.on('call-response', (message) => {
+      if (message.type !== 'call-response') return;
+      const { accepted, fromPeerId, toPeerId } = message.payload;
+      if (accepted) {
+        // Make the call, navigate to call page
+        history.navigate?.('/call');
       }
     });
 
@@ -397,7 +403,7 @@ export class AppService {
       onCallEnded: () => {
         store.dispatch(userActions.setInCall(false));
         // store.dispatch(userActions.setCurrentPage('group'));
-        history.push('/group');
+        history.navigate?.('/group');
         store.dispatch(userActions.setRemoteStream(null));
       },
       

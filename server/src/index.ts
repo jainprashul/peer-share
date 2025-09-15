@@ -8,6 +8,7 @@ import { createRoutes } from './routes/index';
 import { UserWebSocket } from './types/index';
 import { validateEnvironment, EnvConfig } from './validation/schemas';
 import { logger } from './utils';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * PeerShare POC Server - Phase 1 Implementation
@@ -66,7 +67,7 @@ wss.on('connection', (ws: UserWebSocket, req) => {
   logger.log(`New WebSocket connection from ${clientIp}`);
 
   // Give the client a unique ID
-  const clientId = `client-${Math.random().toString(36).substring(2, 15)}`;
+  const clientId = `user_${uuidv4()}`;
   ws.userId = clientId;
   
   websocketHandler.handleConnection(ws);
