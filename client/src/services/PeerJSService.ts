@@ -35,7 +35,7 @@ export class PeerJSService {
   /**
    * Initialize PeerJS with a unique peer ID
    */
-  async initializePeer(userId: string): Promise<string> {
+  async initializePeer(): Promise<string> {
     return new Promise((resolve, reject) => {
       try {
         // this.peer = new Peer(userId, {
