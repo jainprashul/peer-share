@@ -98,5 +98,17 @@ export function createRoutes(groupManager: GroupManager): express.Router {
     });
   });
 
+  router.get('/', (req, res) => {
+    {
+      res.json({
+        name: 'PeerShare POC Server',
+        version: '1.0.0',
+        status: 'running',
+        websocketPort: process.env.WS_PORT,
+        environment: process.env.NODE_ENV
+      });
+    }
+  });
+
   return router;
 }
