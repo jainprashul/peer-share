@@ -1,31 +1,15 @@
 # Multi-stage build for peer-share application
 FROM node:20-alpine AS base
 
-# Install dependencies only when needed
-FROM base AS deps
-WORKDIR /app
-
-# Copy package files
-COPY package.json yarn.lock ./
-COPY server/package.json ./server/
-COPY client/package.json ./client/
-COPY shared/package.json ./shared/
-
-# Install dependencies
-RUN yarn install --frozen-lockfile
-
 # Build stage
 FROM base AS builder
 WORKDIR /app
 
-# Copy dependencies
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/server/node_modules ./server/node_modules
-COPY --from=deps /app/client/node_modules ./client/node_modules
-COPY --from=deps /app/shared/node_modules ./shared/node_modules
-
 # Copy source code
 COPY . .
+
+# Install dependencies
+RUN yarn
 
 # Build the application
 RUN yarn build:prod
@@ -38,23 +22,27 @@ WORKDIR /app
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 peer-share
 
+# Create logs directory with proper permissions
+RUN mkdir -p /app/logs && chown peer-share:nodejs /app/logs
+
 # Copy built application
 COPY --from=builder --chown=peer-share:nodejs /app/build ./build
-COPY --from=builder --chown=peer-share:nodejs /app/package.json ./
-COPY --from=builder --chown=peer-share:nodejs /app/yarn.lock ./
 
-# Install production dependencies only
-RUN yarn install --production --frozen-lockfile && yarn cache clean
-
+# Run as non-root user
 USER peer-share
 
 EXPOSE 3000
+EXPOSE 3001
 
 ENV NODE_ENV=production
 ENV PORT=3000
+ENV WS_PORT=3001
+ENV LOG_DIR=/app/logs
+ENV DISABLE_FILE_LOGGING=false
+# Alternative: Set DISABLE_FILE_LOGGING=true for console-only logging in restricted environments
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
+  CMD node -e "require('http').get('http://localhost:3000/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
 
-CMD ["yarn", "start"]
+CMD ["node", "build/server/index.js"]

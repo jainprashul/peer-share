@@ -32,13 +32,34 @@ class Logger {
   }
 
   private saveLog(message: string, ...args: any[]): void {
+    // Skip file logging if disabled via environment variable
+    if (process.env.DISABLE_FILE_LOGGING === 'true') {
+      return;
+    }
+    
     const log = {
       timestamp: new Date().toISOString(),
       level: this.logLevel,
       message,
       args
     };
-    fs.appendFileSync('server.log', JSON.stringify(log) + '\n');
+    
+    try {
+      // Try to write to a logs directory first, fallback to current directory
+      const logDir = process.env.LOG_DIR || './logs';
+      const logFile = process.env.LOG_FILE || 'server.log';
+      const logPath = `${logDir}/${logFile}`;
+      
+      // Ensure log directory exists
+      if (!fs.existsSync(logDir)) {
+        fs.mkdirSync(logDir, { recursive: true });
+      }
+      
+      fs.appendFileSync(logPath, JSON.stringify(log) + '\n');
+    } catch (error) {
+      // If file writing fails, just log to console
+      console.warn(`[${new Date().toISOString()}] [WARN] Failed to write to log file:`, error);
+    }
   }
 
   public log(message: string, ...args: any[]): void {
