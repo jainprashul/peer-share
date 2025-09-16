@@ -9,7 +9,7 @@ import type {
 } from '@peer-share/shared';
 
 const env = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-const  url = `${env}${window.location.hostname}:3001`;
+const  url = `${env}${window.location.hostname}`;
 
 export type WebSocketEventHandler = (message: AllMessageTypes) => void;
 
