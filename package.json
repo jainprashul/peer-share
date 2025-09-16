@@ -12,6 +12,11 @@
     "bootstrap": "yarn install",
     "clean": "lerna clean",
     "build": "lerna run build",
+    "build:prod": "yarn clean:build && yarn build:client && yarn build:server",
+    "build:client": "cd client && yarn build",
+    "build:server": "cd server && yarn build",
+    "clean:build": "rimraf build",
+    "start": "node build/server/index.js",
     "dev": "lerna run dev --parallel",
     "dev:client": "lerna run dev --scope=@peer-share/client",
     "dev:server": "lerna run dev --scope=@peer-share/server",
@@ -30,7 +35,8 @@
     "fresh": "yarn clean && yarn install:all"
   },
   "devDependencies": {
-    "lerna": "^8.2.3"
+    "lerna": "^8.2.3",
+    "rimraf": "^5.0.1"
   },
   "engines": {
     "node": ">=18.0.0",

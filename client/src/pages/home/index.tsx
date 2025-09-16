@@ -1,20 +1,35 @@
 import { useAppSelector } from '../../store/store';
+import { appService } from '../../services/AppService';
 import LandingPage from './LandingPage';
+import { useNavigate } from 'react-router';
 
 function index() {
     const loading = useAppSelector(state => state.utility.loading);
     const error = useAppSelector(state => state.utility.error);
-    // const data = useAppSelector(state => state.utility.data);
+    const group = useAppSelector(state => state.user.currentGroup);
+    const navigate = useNavigate();
+
+
+    const handleCreateGroup = async (data: { groupName: string; username: string }) => {
+        try {
+            await appService.createGroup(data.groupName, data.username);
+        } catch (error) {
+            console.error('Failed to create group:', error);
+        } finally {
+            // navigate to the group page
+            const groupId = group?.id;
+            if (groupId) {
+                navigate(`/group/${groupId}`);
+            }
+        }
+    };
 
     return (
         <LandingPage
-            onCreateGroup={(data) => {
-                console.log('Creating group:', data);
-                // setAppState(prev => ({ ...prev, currentPage: 'call' }));
-                // TODO: Implement group creation
-            }}
+            onCreateGroup={handleCreateGroup}
             isLoading={loading}
             error={error}
+            group={group}
         />
     )
 }

@@ -10,7 +10,7 @@ export interface User {
 export interface Group {
   id: string;
   name: string;
-  createdAt: Date;
+  createdAt: number;
   members: Map<string, User>;
 }
 
@@ -187,6 +187,22 @@ export interface IncomingCallRequestMessage extends WebSocketMessage {
   };
 }
 
+export interface UpdatePeerIdMessage extends WebSocketMessage {
+  type: 'update-peer-id';
+  payload: {
+    peerId: string;
+  };
+}
+
+export interface ConnectionEstablishedMessage extends WebSocketMessage {
+  type: 'connection-established';
+  payload: {
+    userId: string;
+    username: string;
+    groupId: string;
+  };
+}
+
 // Union type for all possible message types
 export type AllMessageTypes = 
   | CreateGroupMessage
@@ -201,4 +217,6 @@ export type AllMessageTypes =
   | ErrorMessage
   | PeerJoinedMessage
   | ExistingPeersMessage
-  | IncomingCallRequestMessage;
+  | IncomingCallRequestMessage
+  | UpdatePeerIdMessage
+  | ConnectionEstablishedMessage;

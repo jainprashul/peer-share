@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import type { LandingPageProps, CreateGroupForm } from '../../types';
-
-const LandingPage: React.FC<LandingPageProps> = ({ onCreateGroup, isLoading }) => {
+import type { LandingPageProps } from '../../types';
+import type { CreateGroupForm } from '@peer-share/shared';
+const LandingPage: React.FC<LandingPageProps> = ({ onCreateGroup, isLoading, group }) => {
   const [formData, setFormData] = useState<CreateGroupForm>({
     groupName: '',
     username: ''
@@ -83,6 +83,18 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreateGroup, isLoading }) =
           </p>
         </div>
       </div>
+
+      {group && (
+        <div className="mt-6 bg-green-50 border border-green-200 rounded-lg p-4">
+          <h3 className="text-sm font-medium text-green-800 mb-2">Group Created!</h3>
+          <p className="text-sm text-green-700 mb-2">
+            Share this URL to invite others:
+          </p>
+          <div className="bg-white border border-green-300 rounded p-2 text-xs font-mono text-gray-800 break-all">
+            {window.location.origin}/group/{group.id}
+          </div>
+        </div>
+      )}
 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <h3 className="text-sm font-medium text-blue-800 mb-2">Phase 1 Features:</h3>

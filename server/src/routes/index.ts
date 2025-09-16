@@ -42,7 +42,7 @@ export function createRoutes(groupManager: GroupManager): express.Router {
       res.json({
         id: group.id,
         name: group.name,
-        createdAt: group.createdAt.toISOString(),
+        createdAt: group.createdAt,
         memberCount: group.members.size,
         exists: true
       });
@@ -96,6 +96,18 @@ export function createRoutes(groupManager: GroupManager): express.Router {
       timestamp: new Date().toISOString(),
       uptime: process.uptime()
     });
+  });
+
+  router.get('/', (req, res) => {
+    {
+      res.json({
+        name: 'PeerShare POC Server',
+        version: '1.0.0',
+        status: 'running',
+        websocketPort: process.env.WS_PORT,
+        environment: process.env.NODE_ENV
+      });
+    }
   });
 
   return router;

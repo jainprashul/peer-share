@@ -4,6 +4,12 @@
   "description": "Shared types and utilities for PeerShare",
   "main": "./index.ts",
   "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./utils": "./utils/index.ts",
+    "./utils/Logger": "./utils/Logger.ts",
+    "./types": "./types/index.ts"
+  },
   "scripts": {
     "build": "echo 'No build step needed for shared types'",
     "dev": "echo 'No dev step needed for shared types'",

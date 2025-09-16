@@ -29,7 +29,7 @@ export class WebSocketHandler {
    * Handle new WebSocket connection
    */
   handleConnection(ws: UserWebSocket): void {
-    logger.log('New WebSocket connection established');
+    logger.log('New WebSocket connection established with userId: ' + ws.userId);
 
     // Set up connection properties
     ws.isAlive = true;
@@ -37,6 +37,15 @@ export class WebSocketHandler {
     // Set up ping/pong for connection health
     ws.on('pong', () => {
       ws.isAlive = true;
+    });
+
+    this.sendMessage(ws, {
+      type: 'connection-established',
+      payload: {
+        userId: ws.userId,
+        username: ws.username,
+        groupId: ws.groupId
+      }
     });
 
     // Handle incoming messages
@@ -325,8 +334,7 @@ export class WebSocketHandler {
     }, user.id);
 
     // Send existing peers to the new peer
-    const existingPeers = this.groupManager.getGroupPeers(groupId)
-      .filter(peer => peer.peerId !== user.peerId);
+    const existingPeers = this.groupManager.getGroupPeers(groupId);
 
     this.sendMessage(user.websocket, {
       type: 'existing-peers',
@@ -340,7 +348,7 @@ export class WebSocketHandler {
    * Handle WebSocket disconnection
    */
   private handleDisconnection(ws: UserWebSocket): void {
-    logger.log(`WebSocket disconnected: ${ws.username || 'Unknown'}`);
+    logger.log(`WebSocket disconnected: ${ws.username || 'Unknown'} with userId: ${ws.userId}`);
     this.performLeaveGroup(ws);
   }
 

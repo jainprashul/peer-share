@@ -3,9 +3,23 @@
   "version": "1.0.0",
   "description": "PeerShare POC backend server with WebRTC signaling",
   "main": "dist/index.js",
+  "license": "MIT",
+  "author": "Rohit Hattimare , Prashul Jain",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jainprashul/peer-share.git"
+  },
+  "homepage": "https://github.com/jainprashul/peer-share",
+  "keywords": [
+    "peer-share",
+    "p2p",
+    "webrtc",
+    "websocket",
+    "rtc"
+  ],
   "scripts": {
     "dev": "nodemon src/index.ts",
-    "build": "tsc",
+    "build": "tsup",
     "start": "node dist/index.js",
     "clean": "rimraf dist",
     "generate-diagrams": "node scripts/generate-diagrams.js"
@@ -28,6 +42,7 @@
     "nodemon": "^3.0.1",
     "rimraf": "^5.0.1",
     "ts-node": "^10.9.1",
+    "tsup": "^8.5.0",
     "typescript": "^5.1.6"
   }
 }
