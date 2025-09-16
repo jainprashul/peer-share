@@ -1,13 +1,22 @@
 [build]
-builder = "nixpacks"
+builder = "dockerfile"
 
 [deploy]
-startCommand = "yarn start"
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
 
 [environments.production]
-variables = { NODE_ENV = "production", PORT = "3000" }
+variables = { 
+  NODE_ENV = "production", 
+  PORT = "3000",
+  WS_PORT = "3001",
+  LOG_LEVEL = "info",
+}
 
 [environments.staging]
-variables = { NODE_ENV = "staging", PORT = "3000" }
+variables = { 
+  NODE_ENV = "staging", 
+  PORT = "3000",
+  WS_PORT = "3001",
+  LOG_LEVEL = "debug",
+}

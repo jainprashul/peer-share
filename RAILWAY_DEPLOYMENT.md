@@ -67,12 +67,17 @@ railway init peer-share
 # Required variables
 railway variables set NODE_ENV=production
 railway variables set PORT=3000
+railway variables set WS_PORT=3001
 railway variables set WS_HOST=0.0.0.0
+railway variables set LOG_LEVEL=info
+railway variables set DISABLE_FILE_LOGGING=true
+
+# CORS Configuration
+railway variables set ALLOWED_ORIGINS=https://your-app.railway.app,https://your-client.railway.app
 
 # Optional variables
 railway variables set JWT_SECRET=your-jwt-secret
 railway variables set SESSION_SECRET=your-session-secret
-railway variables set CORS_ORIGIN=https://your-app.railway.app
 ```
 
 ### 5. Deploy
@@ -223,10 +228,13 @@ The included `Dockerfile` uses a multi-stage build:
 | `PORT` | Server port | `3000` | Yes |
 | `WS_HOST` | WebSocket host | `0.0.0.0` | Yes |
 | `WS_PORT` | WebSocket port | `3001` | No |
-| `CORS_ORIGIN` | CORS allowed origin | Railway domain | Yes |
+| `ALLOWED_ORIGINS` | CORS allowed origins (comma-separated) | Railway domain | Yes |
+| `LOG_LEVEL` | Logging level | `info` | No |
+| `LOG_DIR` | Log directory path | `./logs` | No |
+| `LOG_FILE` | Log file name | `server.log` | No |
+| `DISABLE_FILE_LOGGING` | Disable file logging (console only) | `false` | No |
 | `JWT_SECRET` | JWT signing secret | Generated | No |
 | `SESSION_SECRET` | Session secret | Generated | No |
-| `LOG_LEVEL` | Logging level | `info` | No |
 
 ## Support
 
