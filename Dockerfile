@@ -32,11 +32,9 @@ COPY --from=builder --chown=peer-share:nodejs /app/build ./build
 USER peer-share
 
 EXPOSE 3000
-EXPOSE 3001
 
 ENV NODE_ENV=production
 ENV PORT=3000
-ENV WS_PORT=3001
 ENV LOG_DIR=/app/logs
 ENV DISABLE_FILE_LOGGING=false
 # Alternative: Set DISABLE_FILE_LOGGING=true for console-only logging in restricted environments

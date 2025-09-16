@@ -2,6 +2,7 @@ import express from 'express';
 import { ZodError } from 'zod';
 import { GroupManager } from '../managers/GroupManager';
 import { validateGroupParams, GetGroupParams } from '../validation/schemas';
+import { getMemoryUsage, getUptime } from '../utils';
 
 /**
  * REST API routes for PeerShare server
@@ -15,13 +16,18 @@ export function createRoutes(groupManager: GroupManager): express.Router {
    */
   router.get('/health', (req, res) => {
     const stats = groupManager.getStats();
+    const uptime = getUptime();
+    const memory = getMemoryUsage();
     const health = {
       status: 'ok',
       timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      memory: process.memoryUsage(),
       version: process.version,
       platform: process.platform,
+      domain: process.env.DOMAIN,
+      port: process.env.PORT,
+      url: process.env.URL,
+      uptime,
+      memory,
       stats
     };
     
