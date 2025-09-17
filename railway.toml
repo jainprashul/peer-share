@@ -1,0 +1,20 @@
+[build]
+builder = "dockerfile"
+
+[deploy]
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+[environments.production]
+variables = { 
+  NODE_ENV = "production", 
+  PORT = "3000",
+  LOG_LEVEL = "info"
+}
+
+[environments.staging]
+variables = { 
+  NODE_ENV = "staging", 
+  PORT = "3000",
+  LOG_LEVEL = "debug"
+}

@@ -16,7 +16,7 @@ import { v4 as uuidv4 } from 'uuid';
  */
 // Validate and parse environment variables with Zod
 const config: EnvConfig = validateEnvironment(process.env);
-const { PORT, WS_PORT, NODE_ENV, ALLOWED_ORIGINS } = config;
+const { PORT, NODE_ENV, ALLOWED_ORIGINS } = config;
 
 // Initialize core components
 const app = express();
@@ -55,15 +55,15 @@ app.get('*', (req, res) => {
 // Create HTTP server
 const server = createServer(app);
 
-// Create WebSocket server
+// Create WebSocket server attached to the same HTTP server
 const wss = new WebSocketServer({ 
-  port: Number(WS_PORT),
+  server,
   perMessageDeflate: {
     concurrencyLimit: 10
   }
 });
 
-logger.log(`WebSocket server starting on port ${WS_PORT}`);
+logger.log(`WebSocket server starting on same port as HTTP server (${PORT})`);
 
 // Handle WebSocket connections
 wss.on('connection', (ws: UserWebSocket, req) => {
@@ -86,7 +86,7 @@ server.listen(PORT, () => {
 🚀 PeerShare POC Server Started
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 HTTP Server:     http://localhost:${PORT}
-WebSocket Server: ws://localhost:${WS_PORT}
+WebSocket Server: ws://localhost:${PORT}
 Environment:     ${NODE_ENV}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   `);

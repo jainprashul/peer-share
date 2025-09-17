@@ -8,8 +8,22 @@ import type {
   UpdatePeerIdMessage
 } from '@peer-share/shared';
 
-const env = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-const  url = `${env}${window.location.hostname}:3001`;
+// WebSocket URL configuration
+const getWebSocketUrl = (): string => {
+  const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+  const hostname = window.location.hostname;
+  
+  // For Railway deployment, use the same hostname and port as the main app
+  if (hostname.includes('railway.app')) {
+    return `${protocol}${hostname}`;
+  }
+  
+  // For local development, use the same port as the HTTP server
+  const wsPort = import.meta.env.VITE_WS_PORT || '3000';
+  return `${protocol}${hostname}:${wsPort}`;
+};
+
+const url = getWebSocketUrl();
 
 export type WebSocketEventHandler = (message: AllMessageTypes) => void;
 

@@ -226,7 +226,6 @@ export const NotFoundResponseSchema = z.object({
 // Environment variables schema
 export const EnvSchema = z.object({
   PORT: z.string().regex(/^\d+$/).transform(Number).default('3000'),
-  WS_PORT: z.string().regex(/^\d+$/).transform(Number).default('3001'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   ALLOWED_ORIGINS: z.string().optional(),
   WS_HEARTBEAT_INTERVAL: z.string().regex(/^\d+$/).transform(Number).default('30000'),
