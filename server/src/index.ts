@@ -58,6 +58,7 @@ const server = createServer(app);
 // Create WebSocket server attached to the same HTTP server
 const wss = new WebSocketServer({ 
   server,
+  path: '/ws',
   perMessageDeflate: {
     concurrencyLimit: 10
   }
