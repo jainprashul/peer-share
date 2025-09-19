@@ -1,0 +1,56 @@
+.page_404 {
+    background: #fff;
+    font-family: 'Arvo', serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+
+}
+
+.page_404 img {
+    width: 100%;
+}
+
+.four_zero_four_bg {
+    background-image: url('/404_notFound.gif');
+    height: 450px;
+    background-position: top center;
+    /* overflow: ; */
+}
+
+.four_zero_four_bg h1 {
+    font-size: 80px;
+}
+
+.four_zero_four_bg h3 {
+    font-size: 80px;
+}
+
+.link_404 {
+    color: #fff !important;
+    padding: 10px 20px;
+    background: #39ac31;
+    margin: 20px 0;
+    display: inline-block;
+}
+
+.txt_404 {
+    margin-top: -350px;
+}
+
+@media (max-width: 1024px) {
+    .txt_404 {
+        margin-top: -350px;
+    }
+}
+
+@media (max-width: 640px) {
+    .txt_404 {
+        margin-top: -300px;
+    }
+}
