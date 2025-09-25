@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { CallPageProps } from '../../types';
+import NetworkMonitorOverlay from '../../components/NetworkMonitorOverlay';
+import { NetworkMonitorProvider } from '../../contexts/NetworkMonitorContext';
 
 const CallPage: React.FC<CallPageProps> = ({
   localStream,
@@ -28,6 +30,11 @@ const CallPage: React.FC<CallPageProps> = ({
 
   return (
     <div className="h-screen bg-black flex flex-col">
+      {/* Network Monitor Overlay */}
+      <NetworkMonitorProvider>
+        <NetworkMonitorOverlay />
+      </NetworkMonitorProvider>
+
       {/* Video Container */}
       <div className="flex-1 relative">
         {/* Remote Video */}
@@ -93,11 +100,10 @@ const CallPage: React.FC<CallPageProps> = ({
           {/* Mute Button */}
           <button
             onClick={onToggleMute}
-            className={`p-3 rounded-full ${
-              controls.isMuted 
-                ? 'bg-red-600 hover:bg-red-700' 
+            className={`p-3 rounded-full ${controls.isMuted
+                ? 'bg-red-600 hover:bg-red-700'
                 : 'bg-gray-600 hover:bg-gray-700'
-            } text-white transition-colors`}
+              } text-white transition-colors`}
             title={controls.isMuted ? 'Unmute' : 'Mute'}
           >
             <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
@@ -112,11 +118,10 @@ const CallPage: React.FC<CallPageProps> = ({
           {/* Video Button */}
           <button
             onClick={onToggleVideo}
-            className={`p-3 rounded-full ${
-              !controls.isVideoEnabled 
-                ? 'bg-red-600 hover:bg-red-700' 
+            className={`p-3 rounded-full ${!controls.isVideoEnabled
+                ? 'bg-red-600 hover:bg-red-700'
                 : 'bg-gray-600 hover:bg-gray-700'
-            } text-white transition-colors`}
+              } text-white transition-colors`}
             title={controls.isVideoEnabled ? 'Turn off camera' : 'Turn on camera'}
           >
             <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
@@ -131,11 +136,10 @@ const CallPage: React.FC<CallPageProps> = ({
           {/* Screen Share Button */}
           <button
             onClick={onToggleScreenShare}
-            className={`p-3 rounded-full ${
-              controls.isScreenSharing 
-                ? 'bg-blue-600 hover:bg-blue-700' 
+            className={`p-3 rounded-full ${controls.isScreenSharing
+                ? 'bg-blue-600 hover:bg-blue-700'
                 : 'bg-gray-600 hover:bg-gray-700'
-            } text-white transition-colors`}
+              } text-white transition-colors`}
             title={controls.isScreenSharing ? 'Stop sharing' : 'Share screen'}
           >
             <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">

@@ -12,6 +12,8 @@ export interface VideoControlsState {
   isMuted: boolean;
   isVideoEnabled: boolean;
   isScreenSharing: boolean;
+  targetFPS: number;
+  adaptiveQuality: boolean;
 }
 
 export interface MediaPermissions {
@@ -46,4 +48,71 @@ export interface CallPageProps {
   onToggleVideo: () => void;
   onToggleScreenShare: () => void;
   onEndCall: () => void;
+}
+
+
+export interface MediaDebugDetails {
+  width: number;
+  height: number;
+  frameRate: number;
+  aspectRatio: number;
+  bitrate: number;
+  codec: string;
+  codecName: string;
+  codecDescription: string;
+  capabilities: MediaTrackCapabilities;
+}
+
+export interface NetworkQuality {
+  timestamp: number; // in ms
+  score: number; // 0-1, where 1 is excellent
+  latency: number; // in ms
+  packetLoss: number; // percentage
+  bandwidth: number; // estimated in kbps
+  inbound: {
+    score: number; // 0-1, where 1 is excellent
+    packetLoss: number; // percentage
+    bandwidth: number; // estimated in kbps
+    jitter: number; // in ms
+    packetsReceived: number;
+    packetsLost: number;
+    bytesReceived: number;
+    dimensions?: {
+      width: number;
+      height: number;
+      frameRate: number;
+    };
+  };
+  outbound: {
+    score: number; // 0-1, where 1 is excellent
+    packetLoss: number; // percentage
+    bandwidth: number; // estimated in kbps
+    jitter: number; // in ms
+    packetsSent: number;
+    bytesSent: number;
+    dimensions?: {
+      width: number;
+      height: number;
+      frameRate: number;
+    };
+  };
+}
+
+export interface FPSConfig {
+  min: number;
+  max: number;
+  default: number;
+  adaptive: boolean;
+  qualityLevels: {
+    low: number;
+    medium: number;
+    high: number;
+  };
+}
+
+export interface VideoConstraints {
+  width: { ideal: number; max: number };
+  height: { ideal: number; max: number };
+  frameRate: { ideal: number; max: number };
+  bitrate?: number;
 }

@@ -116,10 +116,6 @@ export class AppService {
 
       store.dispatch(userActions.setConnecting(true));
 
-      // Get local media
-      const localStream = await peerJSService.getLocalMedia();
-      store.dispatch(userActions.setLocalStream(localStream));
-
       // Start the call
       await peerJSService.startCall(targetUser.peerId);
       webSocketService.requestCall(targetUser.peerId, state.user.currentUser?.peerId!, state.user.currentUser?.username!);
@@ -141,13 +137,6 @@ export class AppService {
     try {
       store.dispatch(userActions.setConnecting(true));
 
-      // Get local media if not already available
-      let localStream = store.getState().user.localStream;
-      if (!localStream) {
-        localStream = await peerJSService.getLocalMedia();
-        store.dispatch(userActions.setLocalStream(localStream));
-      }
-
       // Answer the call
       await peerJSService.answerCall();
       
@@ -168,11 +157,6 @@ export class AppService {
    */
   endCall(): void {
     peerJSService.endCall();
-    store.dispatch(userActions.setInCall(false));
-    history.navigate?.(-1);
-    store.dispatch(userActions.setScreenSharing(false));
-    store.dispatch(userActions.setLocalStream(null));
-    store.dispatch(userActions.setRemoteStream(null));
   }
 
   /**
@@ -200,10 +184,8 @@ export class AppService {
       
       if (state.user.isScreenSharing) {
         await peerJSService.stopScreenShare();
-        store.dispatch(userActions.setScreenSharing(false));
       } else {
         await peerJSService.startScreenShare();
-        store.dispatch(userActions.setScreenSharing(true));
       }
     } catch (error) {
       console.error('Failed to toggle screen share:', error);
@@ -265,14 +247,13 @@ export class AppService {
         id: user.id,
         username: user.username,
         groupId: groupId,
-        peerId: undefined
       };
 
-      const memberList: User[] = members.map((m: any) => ({
+      const memberList: User[] = members.map((m) => ({
         id: m.id,
         username: m.username,
+        peerId: m.peerId,
         groupId: groupId,
-        peerId: m.peerId
       }));
 
       store.dispatch(userActions.setCurrentUser(currentUser));
@@ -336,20 +317,20 @@ export class AppService {
     });
 
     // Incoming call request
-    webSocketService.on('incoming-call-request', (message) => {
+    webSocketService.on('incoming-call-request', async (message) => {
       if (message.type !== 'incoming-call-request') return;
       const { fromPeerId, fromUsername } = message.payload;
       
+      const state = store.getState();
+      const currentUser = state.user.currentUser;
       // Show call notification (you might want to add a modal for this)
       const shouldAnswer = confirm(`Incoming call from ${fromUsername}. Answer?`);
       
       if (shouldAnswer) {
-        this.answerCall();
-        webSocketService.respondToCall(true, fromPeerId, store.getState().user.currentUser?.peerId || '');
+        await this.answerCall();
+        webSocketService.respondToCall(true, fromPeerId, currentUser?.peerId || '');
       } else {
         // Reject the call
-        const state = store.getState();
-        const currentUser = state.user.currentUser;
         if (currentUser && currentUser.peerId) {
           webSocketService.respondToCall(false, fromPeerId, currentUser.peerId);
         }
@@ -387,35 +368,49 @@ export class AppService {
    * Set up PeerJS event handlers
    */
   private setupPeerJSHandlers(): void {
-    peerJSService.setEvents({
-      onLocalStream: (stream: MediaStream) => {
-        store.dispatch(userActions.setLocalStream(stream));
-      },
-      
-      onRemoteStream: (stream: MediaStream) => {
-        store.dispatch(userActions.setRemoteStream(stream));
-      },
-      
+
+    peerJSService.setCallEvents({
       onCallStarted: () => {
         store.dispatch(userActions.setInCall(true));
-        store.dispatch(userActions.setConnecting(false));
       },
-      
+      onIncomingCall(fromPeerId, fromUsername) {
+        console.log('Incoming call from:', fromUsername, fromPeerId);
+      },    
+      onConnectionStateChanged(state) {
+        console.log('Connection state changed:', state);
+      },
       onCallEnded: () => {
         store.dispatch(userActions.setInCall(false));
+        store.dispatch(userActions.setLocalStream(null));
         store.dispatch(userActions.setRemoteStream(null));
+        store.dispatch(userActions.setScreenSharing(false));
+        history.navigate?.(-1);
       },
-      
-      onError: (error: Error) => {
+      onCallError(error) {
         console.error('PeerJS error:', error);
         store.dispatch(utilityActions.setError(error.message));
       },
-      
-      onIncomingCall: (fromPeerId: string, fromUsername: string) => {
-        // This is handled by WebSocket service
-        console.log('Incoming call from:', fromUsername, fromPeerId);
-      }
+      onRemoteStreamReceived(stream) {
+        store.dispatch(userActions.setRemoteStream(stream));
+      },
     });
+
+    peerJSService.setMediaEvents({
+      onLocalStreamReady(stream) {
+        store.dispatch(userActions.setLocalStream(stream));
+      },
+      onRemoteStreamReady(stream) {
+        store.dispatch(userActions.setRemoteStream(stream));
+      },
+      onScreenShareStarted() {
+        store.dispatch(userActions.setScreenSharing(true));
+      },
+      onScreenShareEnded() {
+        store.dispatch(userActions.setScreenSharing(false));
+      },
+
+    });
+
   }
 }
 

@@ -17,7 +17,7 @@ function index() {
 
     useEffect(() => {
         if (currentUser?.id && !currentUser?.peerId) {
-            peerJSService.initializePeer();
+            peerJSService.initialize();
         }
     }, [currentUser?.id, currentUser?.peerId]);
 
