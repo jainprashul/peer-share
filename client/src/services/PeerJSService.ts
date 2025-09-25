@@ -2,64 +2,76 @@ import Peer, { type MediaConnection } from 'peerjs';
 import { webSocketService } from './WebSocketService';
 import { userActions } from '../store/context/userSlice';
 import store from '../store/store';
+import { adaptiveMediaController } from './AdaptiveMediaController';
+import { networkMonitoringService } from './NetworkMonitor';
 
-export interface PeerJSEvents {
-  onLocalStream?: (stream: MediaStream) => void;
-  onRemoteStream?: (stream: MediaStream) => void;
+export interface CallEvents {
   onCallStarted?: () => void;
   onCallEnded?: () => void;
-  onError?: (error: Error) => void;
+  onCallError?: (error: Error) => void;
   onIncomingCall?: (fromPeerId: string, fromUsername: string) => void;
-  onScreenSharingStarted?: () => void;
-  onScreenSharingEnded?: () => void;
+  onRemoteStreamReceived?: (stream: MediaStream) => void;
+  onConnectionStateChanged?: (state: 'connecting' | 'connected' | 'disconnected') => void;
+}
+
+export interface MediaEvents {
+  onLocalStreamReady?: (stream: MediaStream) => void;
+  onRemoteStreamReady?: (stream: MediaStream) => void;
+  onScreenShareStarted?: () => void;
+  onScreenShareEnded?: () => void;
+  onMuteToggled?: (isMuted: boolean) => void;
+  onVideoToggled?: (isVideoEnabled: boolean) => void;
+}
+
+export interface QualityEvents {
+  onFPSChanged?: (fps: number) => void;
+  onQualityChanged?: (quality: { score: number; latency: number; packetLoss: number; bandwidth: number }) => void;
+  onNetworkIssue?: (issue: 'poor_quality' | 'connection_lost' | 'connection_restored') => void;
 }
 
 /**
- * PeerJSService handles P2P video calling using PeerJS
- * Integrates with WebSocketService for signaling
+ * PeerJSService - Clean P2P connection management
+ * Handles only PeerJS connections, delegates media management to AdaptiveMediaController
  */
 export class PeerJSService {
   private peer: Peer | null = null;
-  private mediaConnection: MediaConnection | null = null;
-  private localStream: MediaStream | null = null;
-  private remoteStream: MediaStream | null = null;
-  private screenStream: MediaStream | null = null;
-  private isScreenSharing: boolean = false;
-  private currentPeerId: string | null = null;
-  private events: PeerJSEvents = {};
+  private activeCall: MediaConnection | null = null;
+  private peerId: string | null = null;
+  private isInitialized: boolean = false;
+  
+  // Event handlers
+  private callEvents: CallEvents = {};
+  private mediaEvents: MediaEvents = {};
+  private qualityEvents: QualityEvents = {};
 
   constructor() {
     this.setupWebSocketHandlers();
+    this.setupMediaControllerEvents();
   }
 
   /**
-   * Initialize PeerJS with a unique peer ID
+   * Initialize PeerJS connection
    */
-  async initializePeer(): Promise<string> {
+  async initialize(): Promise<string> {
+    if (this.isInitialized) {
+      return this.peerId!;
+    }
+
     return new Promise((resolve, reject) => {
       try {
-        // this.peer = new Peer(userId, {
-        //   host: 'localhost',
-        //   port: 3001,
-        //   path: '/peerjs',
-        //   config: {
-        //     iceServers: [
-        //       { urls: 'stun:stun.l.google.com:19302' },
-        //       { urls: 'stun:stun.services.mozilla.com' }
-        //     ]
-        //   }
-        // });
         this.peer = new Peer();
 
-        this.peer.on('open', (peerId: string) => {
-          console.log('PeerJS initialized with ID:', peerId);
-          this.currentPeerId = peerId;
+        this.peer.on('open', (id: string) => {
+          console.log('PeerJS initialized with ID:', id);
+          this.peerId = id;
+          this.isInitialized = true;
           
-          // Notify server about our peer ID
-          webSocketService.updatePeerId(peerId);
-          // Save 
-          store.dispatch(userActions.setPeerId(peerId));
-          resolve(peerId);
+          // Notify server and store
+          webSocketService.updatePeerId(id);
+          store.dispatch(userActions.setPeerId(id));
+          
+          this.callEvents.onConnectionStateChanged?.('connected');
+          resolve(id);
         });
 
         this.peer.on('call', (call: MediaConnection) => {
@@ -69,11 +81,12 @@ export class PeerJSService {
 
         this.peer.on('error', (error: Error) => {
           console.error('PeerJS error:', error);
-          this.events.onError?.(error);
+          this.callEvents.onCallError?.(error);
         });
 
         this.peer.on('disconnected', () => {
           console.log('PeerJS disconnected, attempting to reconnect...');
+          this.callEvents.onConnectionStateChanged?.('disconnected');
           this.peer?.reconnect();
         });
 
@@ -84,35 +97,21 @@ export class PeerJSService {
   }
 
   /**
-   * Get local media stream (camera and microphone)
-   */
-  async getLocalMedia(): Promise<MediaStream> {
-    try {
-      this.localStream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true
-      });
-      
-      this.events.onLocalStream?.(this.localStream);
-      return this.localStream;
-    } catch (error) {
-      console.error('Error accessing local media:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Start a call with another peer
+   * Start a call to another peer
    */
   async startCall(remotePeerId: string): Promise<void> {
-    if (!this.peer || !this.localStream) {
-      throw new Error('Peer not initialized or no local stream');
+    if (!this.isInitialized || !this.peer) {
+      throw new Error('PeerJS not initialized');
     }
 
+    const localStream = await adaptiveMediaController.getLocalMedia();
+    if (!localStream) {
+      throw new Error('No local media stream available');
+    }
     try {
-      this.mediaConnection = this.peer.call(remotePeerId, this.localStream);
-      this.setupCallHandlers(this.mediaConnection);
-      this.events.onCallStarted?.();
+      this.activeCall = this.peer.call(remotePeerId, localStream);
+      this.setupCallHandlers(this.activeCall);
+      this.callEvents.onCallStarted?.();
     } catch (error) {
       console.error('Error starting call:', error);
       throw error;
@@ -123,13 +122,19 @@ export class PeerJSService {
    * Answer an incoming call
    */
   async answerCall(): Promise<void> {
-    if (!this.mediaConnection || !this.localStream) {
-      throw new Error('No incoming call or no local stream');
+    console.log(this.activeCall, 'activeCall');
+    // if (!this.activeCall) {
+    //   throw new Error('No incoming call to answer');
+    // }
+
+    const localStream = await adaptiveMediaController.getLocalMedia();
+    if (!localStream) {
+      throw new Error('No local media stream available');
     }
 
     try {
-      this.mediaConnection.answer(this.localStream);
-      this.events.onCallStarted?.();
+      this.activeCall?.answer(localStream);
+      this.callEvents.onCallStarted?.();
     } catch (error) {
       console.error('Error answering call:', error);
       throw error;
@@ -140,120 +145,119 @@ export class PeerJSService {
    * End the current call
    */
   endCall(): void {
-    if (this.isScreenSharing) {
-      this.stopScreenShare();
+    if (this.activeCall) {
+      this.activeCall.close();
+      this.activeCall = null;
     }
-    if (this.screenStream) {
-      this.screenStream.getTracks().forEach(track => track.stop());
-      this.screenStream = null;
-    }
-    if (this.localStream) {
-      this.localStream.getTracks().forEach(track => track.stop());
-      this.localStream = null;
-    }
-    if (this.remoteStream) {
-      this.remoteStream.getTracks().forEach(track => track.stop());
-      this.remoteStream = null;
-    }
-    if (this.mediaConnection) {
-      this.mediaConnection.close();
-      this.mediaConnection = null;
-    }
-    this.events.onCallEnded?.();
+    
+    adaptiveMediaController.stopQualityMonitoring();
+    this.callEvents.onCallEnded?.();
   }
+
   /**
    * Start screen sharing
    */
   async startScreenShare(): Promise<MediaStream> {
-    try {
-      this.screenStream = await navigator.mediaDevices.getDisplayMedia({
-        video: true,
-        audio: true
-      });
+    const screenStream = await adaptiveMediaController.getScreenStream();
+    
+    if (this.activeCall) {
+      const videoTrack = screenStream.getVideoTracks()[0];
+      const sender = this.activeCall.peerConnection.getSenders()
+        .find(s => s.track && s.track.kind === 'video');
 
-      // Replace the video track in the current call
-      if (this.mediaConnection && this.localStream) {
-        const videoTrack = this.screenStream.getVideoTracks()[0];
-        const sender = this.mediaConnection.peerConnection.getSenders()
-          .find(s => s.track && s.track.kind === 'video');
-
-        this.isScreenSharing = true;
-        this.events.onScreenSharingStarted?.();
-        if (sender) {
-          await sender.replaceTrack(videoTrack);
-        }
+      if (sender) {
+        await sender.replaceTrack(videoTrack);
       }
-
-      return this.screenStream;
-    } catch (error) {
-      console.error('Error starting screen share:', error);
-      throw error;
+      
+      // Handle screen share end
+      videoTrack.onended = () => {
+        adaptiveMediaController.stopScreenShare();
+        this.mediaEvents.onScreenShareEnded?.();
+      };
     }
+
+    this.mediaEvents.onScreenShareStarted?.();
+    return screenStream;
   }
 
   /**
-   * Stop screen sharing and return to camera
+   * Stop screen sharing
    */
   async stopScreenShare(): Promise<void> {
-    if (this.mediaConnection && this.localStream) {
-      const videoTrack = this.localStream.getVideoTracks()[0];
-      const sender = this.mediaConnection.peerConnection.getSenders()
-        .find(s => s.track && s.track.kind === 'video');
+    adaptiveMediaController.stopScreenShare();
+    
+    if (this.activeCall) {
+      const localStream = await adaptiveMediaController.getLocalMedia();
+      if (localStream) {
+        const videoTrack = localStream.getVideoTracks()[0];
+        const sender = this.activeCall.peerConnection.getSenders()
+          .find(s => s.track && s.track.kind === 'video');
 
-      this.isScreenSharing = false;
-      this.events.onScreenSharingEnded?.();
-      if (sender && videoTrack) {
-        await sender.replaceTrack(videoTrack);
+        if (sender && videoTrack) {
+          await sender.replaceTrack(videoTrack);
+        }
       }
     }
+
+    this.mediaEvents.onScreenShareEnded?.();
   }
 
   /**
    * Toggle mute state
    */
   toggleMute(): boolean {
-    if (this.localStream) {
-      const audioTrack = this.localStream.getAudioTracks()[0];
-      if (audioTrack) {
-        audioTrack.enabled = !audioTrack.enabled;
-        return audioTrack.enabled;
-      }
-    }
-    return false;
+    const isMuted = !adaptiveMediaController.toggleMute();
+    this.mediaEvents.onMuteToggled?.(isMuted);
+    return isMuted;
   }
 
   /**
    * Toggle video state
    */
   toggleVideo(): boolean {
-    if (this.localStream) {
-      const videoTrack = this.localStream.getVideoTracks()[0];
-      if (videoTrack) {
-        videoTrack.enabled = !videoTrack.enabled;
-        return videoTrack.enabled;
-      }
-    }
-    return false;
+    const isVideoEnabled = !adaptiveMediaController.toggleVideo();
+    this.mediaEvents.onVideoToggled?.(isVideoEnabled);
+    return isVideoEnabled;
   }
 
   /**
-   * Set event handlers
+   * Get current call state
    */
-  setEvents(events: PeerJSEvents): void {
-    this.events = { ...this.events, ...events };
-  }
-
-  /**
-   * Get current state
-   */
-  getState() {
+  getCallState() {
     return {
-      peerId: this.currentPeerId,
-      isConnected: this.peer?.open || false,
-      localStream: this.localStream,
-      remoteStream: this.remoteStream,
-      isInCall: this.mediaConnection !== null
+      peerId: this.peerId,
+      isConnected: this.isInitialized,
+      isInCall: this.activeCall !== null,
+      callPeerId: this.activeCall?.peer || null
     };
+  }
+
+  /**
+   * Get media streams
+   */
+  getMediaStreams() {
+    return adaptiveMediaController.getStreams();
+  }
+
+  /**
+   * Set call event handlers
+   */
+  setCallEvents(events: CallEvents): void {
+    this.callEvents = { ...this.callEvents, ...events };
+  }
+
+  /**
+   * Set media event handlers
+   */
+  setMediaEvents(events: MediaEvents): void {
+    this.mediaEvents = { ...this.mediaEvents, ...events };
+  }
+
+  /**
+   * Set quality event handlers
+   */
+  setQualityEvents(events: QualityEvents): void {
+    this.qualityEvents = { ...this.qualityEvents, ...events };
   }
 
   /**
@@ -262,33 +266,25 @@ export class PeerJSService {
   destroy(): void {
     this.endCall();
     
-    if (this.localStream) {
-      this.localStream.getTracks().forEach(track => track.stop());
-      this.localStream = null;
-    }
-
-    if (this.screenStream) {
-      this.screenStream.getTracks().forEach(track => track.stop());
-      this.screenStream = null;
-    }
-
     if (this.peer) {
       this.peer.destroy();
       this.peer = null;
     }
 
-    this.currentPeerId = null;
+    adaptiveMediaController.destroy();
+    networkMonitoringService.destroy();
+
+    this.peerId = null;
+    this.isInitialized = false;
   }
 
   /**
    * Handle incoming call
    */
   private handleIncomingCall(call: MediaConnection): void {
-    this.mediaConnection = call;
+    this.activeCall = call;
     this.setupCallHandlers(call);
-    
-    // Notify about incoming call
-    this.events.onIncomingCall?.(call.peer, 'Unknown'); // Username will be updated via WebSocket
+    this.callEvents.onIncomingCall?.(call.peer, 'Unknown');
   }
 
   /**
@@ -297,31 +293,69 @@ export class PeerJSService {
   private setupCallHandlers(call: MediaConnection): void {
     call.on('stream', (stream: MediaStream) => {
       console.log('Received remote stream');
-      this.remoteStream = stream;
-      this.events.onRemoteStream?.(stream);
+      adaptiveMediaController.setRemoteStream(stream);
+      this.callEvents.onRemoteStreamReceived?.(stream);
+      this.mediaEvents.onRemoteStreamReady?.(stream);
+      
+      // Start quality monitoring
+      if (call.peerConnection) {
+        adaptiveMediaController.startQualityMonitoring(call.peerConnection);
+      }
     });
 
     call.on('close', () => {
       console.log('Call ended');
-      this.mediaConnection = null;
-      this.remoteStream = null;
-      this.events.onCallEnded?.();
+      this.activeCall = null;
+      adaptiveMediaController.stopQualityMonitoring();
+      this.callEvents.onCallEnded?.();
     });
 
     call.on('error', (error: Error) => {
       console.error('Call error:', error);
-      this.events.onError?.(error);
+      this.callEvents.onCallError?.(error);
     });
   }
 
   /**
-   * Set up WebSocket message handlers for call signaling
+   * Set up media controller event handlers
+   */
+  private setupMediaControllerEvents(): void {
+    adaptiveMediaController.setEvents({
+      onLocalStream: (stream) => {
+        this.mediaEvents.onLocalStreamReady?.(stream);
+      },
+      onRemoteStream: (stream) => {
+        this.mediaEvents.onRemoteStreamReady?.(stream);
+      },
+      onFPSChanged: (fps) => {
+        this.qualityEvents.onFPSChanged?.(fps);
+      },
+      onQualityChanged: (quality) => {
+        this.qualityEvents.onQualityChanged?.(quality);
+      }
+    });
+
+    networkMonitoringService.setEvents({
+      onQualityChanged: (quality) => {
+        this.qualityEvents.onQualityChanged?.(quality);
+      },
+      onConnectionLost: () => {
+        this.qualityEvents.onNetworkIssue?.('connection_lost');
+      },
+      onConnectionRestored: () => {
+        this.qualityEvents.onNetworkIssue?.('connection_restored');
+      }
+    });
+  }
+
+  /**
+   * Set up WebSocket message handlers
    */
   private setupWebSocketHandlers(): void {
     webSocketService.on('incoming-call-request', (message) => {
       if (message.type !== 'incoming-call-request') return;
       const { fromPeerId, fromUsername } = message.payload;
-      this.events.onIncomingCall?.(fromPeerId, fromUsername);
+      this.callEvents.onIncomingCall?.(fromPeerId, fromUsername);
     });
   }
 }

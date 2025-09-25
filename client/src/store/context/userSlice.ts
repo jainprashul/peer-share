@@ -1,6 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { type User, type Group } from '@peer-share/shared';
-
 interface UserState {
   // Connection state
   isConnected: boolean;
@@ -20,7 +19,6 @@ interface UserState {
   isMuted: boolean;
   isVideoEnabled: boolean;
   isScreenSharing: boolean;
-  
 }
 
 const initialState: UserState = {
@@ -35,7 +33,6 @@ const initialState: UserState = {
   isMuted: false,
   isVideoEnabled: true,
   isScreenSharing: false,
- 
 };
 
 const userSlice = createSlice({
