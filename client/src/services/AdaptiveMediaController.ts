@@ -36,6 +36,15 @@ export class AdaptiveMediaController {
   private screenStream: MediaStream | null = null;
   private isScreenSharing: boolean = false;
 
+  // Canvas-based screen sharing
+  private canvas: HTMLCanvasElement | null = null;
+  private ctx: CanvasRenderingContext2D | null = null;
+  private canvasStream: MediaStream | null = null;
+  private animationFrameId: number | null = null;
+  private currentResolution = { width: 1920, height: 1080 };
+  private lastQualityScore = 1.0;
+  private adaptationHistory: Array<{ timestamp: number; resolution: { width: number; height: number }; reason: string }> = [];
+
   constructor() {
     this.currentFPS = this.fpsConfig.default;
     this.setupNetworkMonitoringEvents();
@@ -171,34 +180,24 @@ export class AdaptiveMediaController {
     this.networkMonitor.setEvents({
       onQualityChanged: (quality) => {
         this.events.onQualityChanged?.(quality);
+        // Trigger adaptive screen sharing when network quality changes
+        if (this.isScreenSharing) {
+          this.adaptScreenShareQuality(quality);
+        }
+      },
+      onConnectionLost: () => {
+        if (this.isScreenSharing) {
+          this.adaptScreenShareQuality({ score: 0.1, latency: 9999, packetLoss: 50, bandwidth: 100 } as NetworkQuality);
+        }
+      },
+      onConnectionRestored: () => {
+        if (this.isScreenSharing) {
+          this.adaptScreenShareQuality(this.networkMonitor.getCurrentQuality());
+        }
       }
     });
   }
 
-  /**
-   * Adjust FPS based on network quality
-   */
-  private async adjustFPSBasedOnQuality(): Promise<void> {
-    if (!this.fpsConfig.adaptive) return;
-
-    const networkQuality = this.networkMonitor.getCurrentQuality();
-    let targetFPS = this.currentFPS;
-
-    if (networkQuality.score < 0.3) {
-      // Poor quality - use low FPS
-      targetFPS = this.fpsConfig.qualityLevels.low;
-    } else if (networkQuality.score < 0.7) {
-      // Medium quality - use medium FPS
-      targetFPS = this.fpsConfig.qualityLevels.medium;
-    } else {
-      // Good quality - use high FPS
-      targetFPS = this.fpsConfig.qualityLevels.high;
-    }
-
-    if (targetFPS !== this.currentFPS) {
-      await this.setTargetFPS(targetFPS);
-    }
-  }
 
   /**
    * Get current network quality
@@ -293,20 +292,65 @@ export class AdaptiveMediaController {
   }
 
   /**
-   * Get screen stream
+   * Get screen stream (legacy method - now uses canvas approach)
    */
   async getScreenStream(): Promise<MediaStream> {
-    const constraints = this.getVideoConstraints();
+    return this.startAdaptiveScreenShare();
+  }
+
+  /**
+   * Start screen share with adaptive canvas downscaling
+   */
+  async startAdaptiveScreenShare(): Promise<MediaStream> {
     try {
-      this.screenStream = await navigator.mediaDevices.getDisplayMedia({
-        video: constraints,
-        audio: true
+      // Get screen stream with high quality initially
+      const screenStream = await navigator.mediaDevices.getDisplayMedia({
+        video: { 
+          frameRate: { ideal: 60, max: 60 },
+          width: { ideal: 1920, max: 1920 },
+          height: { ideal: 1080, max: 1080 }
+        },
+        audio: true,
       });
 
+      const screenVideo = document.createElement("video");
+      screenVideo.srcObject = screenStream;
+      screenVideo.muted = false; // Prevent audio feedback
+      await screenVideo.play();
+
+      // Create canvas for downscaling
+      this.canvas = document.createElement("canvas");
+      this.ctx = this.canvas.getContext("2d");
+      this.setCanvasResolution(1920, 1080);
+
+      // Draw loop (downscale continuously)
+      const draw = () => {
+        if (this.ctx && this.canvas && screenVideo) {
+          this.ctx.drawImage(screenVideo, 0, 0, this.canvas.width, this.canvas.height);
+          this.animationFrameId = requestAnimationFrame(draw);
+        }
+      };
+      draw();
+
+      // Create stream from canvas with adaptive frame rate
+      const networkQuality = this.networkMonitor.getCurrentQuality();
+      const targetFPS = this.getAdaptiveFrameRate(networkQuality);
+      
+      this.canvasStream = this.canvas.captureStream(targetFPS);
+
+
+      this.screenStream = this.canvasStream;
       this.isScreenSharing = true;
-      return this.screenStream;
+
+      // Stop handler
+      screenStream.getVideoTracks()[0].onended = () => this.stopScreenShare();
+
+      // Start network monitoring for screen share
+      this.startScreenShareMonitoring();
+
+      return this.canvasStream;
     } catch (error) {
-      console.error('Error starting screen share:', error);
+      console.error('Error starting adaptive screen share:', error);
       throw error;
     }
   }
@@ -322,11 +366,196 @@ export class AdaptiveMediaController {
    * Stop screen sharing
    */
   stopScreenShare(): void {
-    if (this.screenStream) {
-      this.screenStream.getTracks().forEach(track => track.stop());
-      this.screenStream = null;
+    // Stop animation frame
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
     }
+
+    // Stop screen share monitoring
+    this.stopScreenShareMonitoring();
+
+    // Stop canvas stream
+    if (this.canvasStream) {
+      this.canvasStream.getTracks().forEach(track => track.stop());
+      this.canvasStream = null;
+    }
+
+    // Clean up canvas
+    this.canvas = null;
+    this.ctx = null;
+    this.screenStream = null;
     this.isScreenSharing = false;
+  }
+
+  /**
+   * Change canvas resolution dynamically
+   */
+  setCanvasResolution(width: number, height: number): void {
+    this.currentResolution = { width, height };
+    if (this.canvas) {
+      this.canvas.width = width;
+      this.canvas.height = height;
+    }
+  }
+
+  /**
+   * Get adaptive frame rate based on network quality
+   */
+  private getAdaptiveFrameRate(networkQuality: NetworkQuality): number {
+    if (networkQuality.score < 0.3) {
+      return this.fpsConfig.qualityLevels.low; // 15 FPS
+    } else if (networkQuality.score < 0.7) {
+      return this.fpsConfig.qualityLevels.medium; // 30 FPS
+    } else {
+      return this.fpsConfig.qualityLevels.high; // 60 FPS
+    }
+  }
+
+  /**
+   * Start screen share monitoring using NetworkMonitor
+   */
+  private startScreenShareMonitoring(): void {
+    if (!this.isScreenSharing) return;
+    
+    // Get current quality and adapt immediately
+    const currentQuality = this.networkMonitor.getCurrentQuality();
+    this.adaptScreenShareQuality(currentQuality);
+  }
+
+  /**
+   * Stop screen share monitoring
+   */
+  private stopScreenShareMonitoring(): void {
+    // NetworkMonitor will continue running for other purposes
+    // We just stop responding to its events for screen sharing
+  }
+
+  /**
+   * Adapt screen share quality based on network conditions
+   */
+  private async adaptScreenShareQuality(quality: NetworkQuality): Promise<void> {
+    if (!this.isScreenSharing || !this.canvas) return;
+
+    const qualityChange = Math.abs(quality.score - this.lastQualityScore);
+    
+    // Only adapt if there's a significant quality change (>0.1) or it's been 10+ seconds
+    const shouldAdapt = qualityChange > 0.1 || 
+      (Date.now() - (this.adaptationHistory[this.adaptationHistory.length - 1]?.timestamp || 0)) > 10000;
+
+    if (!shouldAdapt) return;
+
+    const { targetResolution, targetFPS, reason } = this.calculateOptimalSettings(quality);
+    
+    // Only change if different from current settings
+    if (targetResolution.width !== this.currentResolution.width || 
+        targetResolution.height !== this.currentResolution.height) {
+      
+      console.log(`📊 Screen Share Adaptation: ${reason}`, {
+        from: `${this.currentResolution.width}x${this.currentResolution.height}`,
+        to: `${targetResolution.width}x${targetResolution.height}`,
+        fps: targetFPS,
+        networkScore: quality.score,
+        outboundBandwidth: quality.outbound.bandwidth,
+        outboundPacketLoss: quality.outbound.packetLoss
+      });
+
+      this.setCanvasResolution(targetResolution.width, targetResolution.height);
+      await this.updateCanvasStreamFrameRate(targetFPS);
+      
+      // Record adaptation history
+      this.adaptationHistory.push({
+        timestamp: Date.now(),
+        resolution: { ...targetResolution },
+        reason
+      });
+      
+      // Keep only last 10 adaptations
+      if (this.adaptationHistory.length > 10) {
+        this.adaptationHistory.shift();
+      }
+    }
+
+    this.lastQualityScore = quality.score;
+  }
+
+  /**
+   * Calculate optimal screen share settings based on network quality
+   */
+  private calculateOptimalSettings(quality: NetworkQuality): {
+    targetResolution: { width: number; height: number };
+    targetFPS: number;
+    reason: string;
+  } {
+    const { score, outbound } = quality;
+    
+    // Use outbound metrics for screen sharing (we're sending)
+    const bandwidth = outbound.bandwidth;
+    const packetLoss = outbound.packetLoss;
+    const jitter = outbound.jitter;
+
+    // Determine quality level based on multiple factors
+    let qualityLevel: 'low' | 'medium' | 'high';
+    let reason: string;
+
+    if (score < 0.3 || bandwidth < 500 || packetLoss > 5 || jitter > 50) {
+      qualityLevel = 'low';
+      reason = `Poor network (score: ${score.toFixed(2)}, bandwidth: ${bandwidth.toFixed(0)}kbps, loss: ${packetLoss.toFixed(1)}%)`;
+    } else if (score < 0.7 || bandwidth < 1500 || packetLoss > 2 || jitter > 25) {
+      qualityLevel = 'medium';
+      reason = `Medium network (score: ${score.toFixed(2)}, bandwidth: ${bandwidth.toFixed(0)}kbps, loss: ${packetLoss.toFixed(1)}%)`;
+    } else {
+      qualityLevel = 'high';
+      reason = `Good network (score: ${score.toFixed(2)}, bandwidth: ${bandwidth.toFixed(0)}kbps, loss: ${packetLoss.toFixed(1)}%)`;
+    }
+
+    // Map quality level to resolution and FPS
+    const settings = {
+      low: {
+        resolution: { width: 854, height: 480 },
+        fps: this.fpsConfig.qualityLevels.low,
+        reason: `${reason} → 480p`
+      },
+      medium: {
+        resolution: { width: 1280, height: 720 },
+        fps: this.fpsConfig.qualityLevels.medium,
+        reason: `${reason} → 720p`
+      },
+      high: {
+        resolution: { width: 1920, height: 1080 },
+        fps: this.fpsConfig.qualityLevels.high,
+        reason: `${reason} → 1080p`
+      }
+    };
+
+    const target = settings[qualityLevel];
+    return {
+      targetResolution: target.resolution,
+      targetFPS: target.fps,
+      reason: target.reason
+    };
+  }
+
+  /**
+   * Update canvas stream frame rate
+   */
+  private async updateCanvasStreamFrameRate(targetFPS: number): Promise<void> {
+    if (!this.canvasStream) return;
+
+    const track = this.canvasStream.getVideoTracks()[0];
+    if (track) {
+      try {
+        await track.applyConstraints({ frameRate: targetFPS });
+        
+        // Update canvas stream with new frame rate
+        this.canvasStream = this.canvas!.captureStream(targetFPS);
+        
+        // Note: Track replacement should be handled by the calling service
+        // (e.g., PeerJSService) as it has access to the peer connection
+      } catch (error) {
+        console.warn('Failed to update frame rate:', error);
+      }
+    }
   }
 
   /**
@@ -391,6 +620,28 @@ export class AdaptiveMediaController {
   }
 
   /**
+   * Get screen share statistics and adaptation history
+   */
+  getScreenShareStats(): {
+    isActive: boolean;
+    currentResolution: { width: number; height: number };
+    networkQuality: NetworkQuality;
+    adaptationHistory: Array<{ timestamp: number; resolution: { width: number; height: number }; reason: string }>;
+    lastAdaptation?: { timestamp: number; resolution: { width: number; height: number }; reason: string };
+  } {
+    const networkQuality = this.networkMonitor.getCurrentQuality();
+    const lastAdaptation = this.adaptationHistory[this.adaptationHistory.length - 1];
+
+    return {
+      isActive: this.isScreenSharing,
+      currentResolution: { ...this.currentResolution },
+      networkQuality,
+      adaptationHistory: [...this.adaptationHistory],
+      lastAdaptation
+    };
+  }
+
+  /**
    * Clean up all streams
    */
   cleanupStreams(): void {
@@ -404,12 +655,8 @@ export class AdaptiveMediaController {
       this.remoteStream = null;
     }
 
-    if (this.screenStream) {
-      this.screenStream.getTracks().forEach(track => track.stop());
-      this.screenStream = null;
-    }
-
-    this.isScreenSharing = false;
+    // Stop screen sharing with canvas cleanup
+    this.stopScreenShare();
   }
 
   /**

@@ -321,16 +321,16 @@ export class PeerJSService {
    */
   private setupMediaControllerEvents(): void {
     adaptiveMediaController.setEvents({
-      onLocalStream: (stream) => {
+      onLocalStream: (stream: MediaStream) => {
         this.mediaEvents.onLocalStreamReady?.(stream);
       },
-      onRemoteStream: (stream) => {
+      onRemoteStream: (stream: MediaStream) => {
         this.mediaEvents.onRemoteStreamReady?.(stream);
       },
-      onFPSChanged: (fps) => {
+      onFPSChanged: (fps: number) => {
         this.qualityEvents.onFPSChanged?.(fps);
       },
-      onQualityChanged: (quality) => {
+      onQualityChanged: (quality: any) => {
         this.qualityEvents.onQualityChanged?.(quality);
       }
     });

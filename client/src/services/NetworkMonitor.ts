@@ -150,13 +150,13 @@ export class NetworkMonitor {
         
         // Calculate inbound bandwidth from bytes received
         const bytesReceived = report.bytesReceived || 0;
-        const diff = bytesReceived - this.last.bytesReceived;
-        const timeDiff = Date.now() - this.last.timestamp;
+        const diff = (bytesReceived - this.last.bytesReceived) * 8; // in bytes
+        const timeDiff = (Date.now() - this.last.timestamp) / 1000; // in seconds
         this.last.bytesReceived = bytesReceived;
 
-        console.log('diff', diff , 'timeDiff', timeDiff , 'inboundBandwidth', inboundBandwidth , 'bytesReceived', (diff * 8) / (timeDiff * 1000));
+        console.log('diff', diff , 'timeDiff', timeDiff , 'inboundBandwidth', inboundBandwidth , 'bytesReceived', diff / (timeDiff * 1000));
 
-        inboundBandwidth = (diff * 8) / (timeDiff * 1000); // kbps
+        inboundBandwidth = diff / (timeDiff * 1000); // kbps in bytes
         inboundDimensions = {
           width: report.frameWidth,
           height: report.frameHeight,
@@ -177,14 +177,14 @@ export class NetworkMonitor {
           : 0;
         
         // Calculate outbound bandwidth from bytes sent
-        const diff = outboundBytesSent - this.last.bytesSent;
-        const timeDiff = Date.now() - this.last.timestamp;
+        const diff = (outboundBytesSent - this.last.bytesSent) * 8; // in bytes
+        const timeDiff = (Date.now() - this.last.timestamp) / 1000; // in seconds
         this.last.bytesSent = outboundBytesSent;
         this.last.timestamp = Date.now();
 
-        console.log('diff', diff , 'timeDiff', timeDiff , 'outboundBandwidth', outboundBandwidth , 'bytesSent', (diff * 8) / (timeDiff * 1000));
+        console.log('diff', diff , 'timeDiff', timeDiff , 'outboundBandwidth', outboundBandwidth , 'bytesSent', diff / (timeDiff * 1000));
 
-        outboundBandwidth = (diff * 8) / (timeDiff * 1000); // kbps
+        outboundBandwidth = diff / (timeDiff * 1000); // kbps in bytes
         outboundDimensions = {
           width: report.frameWidth,
           height: report.frameHeight,

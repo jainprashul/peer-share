@@ -41,8 +41,8 @@ const NetworkMonitorOverlay: React.FC = () => {
   };
 
   const formatBandwidth = (bandwidth: number) => {
-    if (bandwidth >= 1) return `${(bandwidth).toFixed(1)} Mbps`;
-    return `${bandwidth.toFixed(0)} kbps`;
+    if (bandwidth >= 1000) return `${(bandwidth / 1000).toFixed(2)} Mbps`;
+    return `${bandwidth.toFixed(2)} kbps`;
   };
 
   const formatLatency = (latency: number) => {
