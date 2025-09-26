@@ -7,6 +7,7 @@ import Fallback from '../components/Fallback'
 import { history } from './history'
 import { useEffect } from 'react'
 import { onAppStart } from './onAppStart'
+import LoginPage from '../pages/login'
 
 const AppRouter = () => {
     useEffect(() => {
@@ -31,6 +32,7 @@ function AppRouterContent() {
     return (
         <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/login" element={<LoginPage />} />
             <Route path="/group" element={<Group />} />
             <Route path="/group/:groupId" element={<Group />} />
             <Route path="/call" element={<Call />} />
