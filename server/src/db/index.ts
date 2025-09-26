@@ -1,13 +1,23 @@
 import mongoose from 'mongoose';
 import { MongoDBUrl } from '../constants';
+import { logger } from '../utils';
 
 
 export const connectDB = async (): Promise<void> => {
   try {
     await mongoose.connect(MongoDBUrl);
-    console.log("✅ MongoDB connected");
+    logger.log("✅ MongoDB connected");
+
+    mongoose.connection.on('disconnected', () => {
+      logger.warn('MongoDB disconnected');
+    });
+
+    mongoose.connection.on('reconnected', () => {
+      logger.info('MongoDB reconnected');
+    });
+
   } catch (error) {
-    console.error("❌ MongoDB connection error:", error);
+    logger.error("❌ MongoDB connection error:", error);
     process.exit(1);
   }
 }

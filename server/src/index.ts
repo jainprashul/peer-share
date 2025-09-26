@@ -11,6 +11,8 @@ import { logger } from './utils';
 import { v4 as uuidv4 } from 'uuid';
 import passport, { generateToken } from './auth/passport';
 import { Iuser } from './db/models/user';
+import { connectDB } from './db';
+import mongoose from 'mongoose';
 
 /**
  * PeerShare POC Server - Phase 1 Implementation
@@ -20,6 +22,9 @@ import { Iuser } from './db/models/user';
 const config: EnvConfig = validateEnvironment(process.env);
 const { PORT, NODE_ENV, ALLOWED_ORIGINS } = config;
 
+// Initializing Connect to MongoDB
+connectDB();
+
 // Initialize core components
 const app = express();
 const groupManager = new GroupManager();
@@ -27,7 +32,7 @@ const websocketHandler = new WebSocketHandler(groupManager);
 
 // Express middleware
 app.use(cors({
-  origin: NODE_ENV === 'development' 
+  origin: NODE_ENV === 'development'
     ? ['http://localhost:5173', 'http://localhost:3000']
     : ALLOWED_ORIGINS?.split(',') || [],
   credentials: true
@@ -52,19 +57,19 @@ app.use(passport.initialize);
 
 // Auth routes
 app.post('/api/login', passport.authenticate('local', { session: false }), (req, res) => {
-    const token = generateToken(req.user as Iuser);
-    res.json({ token });
+  const token = generateToken(req.user as Iuser);
+  res.json({ token });
 });
 
 app.get('/api/auth/google', passport.authenticate('google', { scope: ['profile', 'email'], session: false }));
 
 app.get('/api/auth/google/callback', passport.authenticate('google', { failureRedirect: '/', session: false }), (req, res) => {
-    const token = generateToken(req.user as Iuser);
-    res.redirect(`/?token=${token}`);
+  const token = generateToken(req.user as Iuser);
+  res.redirect(`/?token=${token}`);
 });
 
 app.get('/api/profile', passport.authenticate('jwt', { session: false }), (req, res) => {
-    res.json(req.user);
+  res.json(req.user);
 });
 
 // Basic route for testing
@@ -96,7 +101,7 @@ wss.on('connection', (ws: UserWebSocket, req) => {
   // Give the client a unique ID
   const clientId = `user_${uuidv4()}`;
   ws.userId = clientId;
-  
+
   websocketHandler.handleConnection(ws);
 });
 
@@ -118,18 +123,23 @@ Environment:     ${NODE_ENV}
 // Graceful shutdown handling
 const shutdown = (signal: string) => {
   logger.log(`\n${signal} received. Shutting down gracefully...`);
-  
+
   // Close WebSocket server
   wss.close(() => {
     logger.log('WebSocket server closed');
   });
-  
+
   // Close HTTP server
   server.close(() => {
     logger.log('HTTP server closed');
-    process.exit(0);
+    // Close Mongoose connection
+    mongoose.connection.once('close', () => {
+      logger.log('Mongoose connection closed');
+      process.exit(0);
+    });
+    mongoose.connection.close();
   });
-  
+
   // Force exit after 10 seconds
   setTimeout(() => {
     logger.error('Could not close connections in time, forcefully shutting down');
