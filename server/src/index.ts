@@ -9,6 +9,8 @@ import { UserWebSocket } from './types/index';
 import { validateEnvironment, EnvConfig } from './validation/schemas';
 import { logger } from './utils';
 import { v4 as uuidv4 } from 'uuid';
+import passport, { generateToken } from './auth/passport';
+import { Iuser } from './db/models/user';
 
 /**
  * PeerShare POC Server - Phase 1 Implementation
@@ -45,6 +47,26 @@ app.use((req, res, next) => {
 // API routes
 app.use('/api', createRoutes(groupManager));
 
+// Passport middleware
+app.use(passport.initialize);
+
+// Auth routes
+app.post('/api/login', passport.authenticate('local', { session: false }), (req, res) => {
+    const token = generateToken(req.user as Iuser);
+    res.json({ token });
+});
+
+app.get('/api/auth/google', passport.authenticate('google', { scope: ['profile', 'email'], session: false }));
+
+app.get('/api/auth/google/callback', passport.authenticate('google', { failureRedirect: '/', session: false }), (req, res) => {
+    const token = generateToken(req.user as Iuser);
+    res.redirect(`/?token=${token}`);
+});
+
+app.get('/api/profile', passport.authenticate('jwt', { session: false }), (req, res) => {
+    res.json(req.user);
+});
+
 // Basic route for testing
 
 // Catch-all handler: send back React's index.html file for client-side routing
@@ -56,7 +78,7 @@ app.get('*', (req, res) => {
 const server = createServer(app);
 
 // Create WebSocket server attached to the same HTTP server
-const wss = new WebSocketServer({ 
+const wss = new WebSocketServer({
   server,
   path: '/ws',
   perMessageDeflate: {
