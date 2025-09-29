@@ -1,10 +1,19 @@
 import { Iuser, User } from "../db/models/user";
-
+import bcrypt from 'bcrypt';
 
 export class UserService {
 
     async createUser(data: Partial<Iuser>): Promise<Iuser> {
-        const user = new User(data);
+        // const user = new User(data);
+        // await user.save();
+        // return user;
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(data.password!, salt);
+        const user = new User({
+            ...data,
+            password: hashedPassword
+        });
         await user.save();
         return user;
     }
@@ -25,4 +34,7 @@ export class UserService {
         return User.findByIdAndDelete(id);
     }
 
+    async comparePassword(password: string, hashedPassword: string): Promise<boolean> {
+        return bcrypt.compare(password, hashedPassword);
+    }
 }

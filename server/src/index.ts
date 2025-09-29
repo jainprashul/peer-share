@@ -7,9 +7,9 @@ import { WebSocketHandler } from './socket/WebSocketHandler';
 import { createRoutes } from './routes/index';
 import { UserWebSocket } from './types/index';
 import { validateEnvironment, EnvConfig } from './validation/schemas';
-import { logger } from './utils';
+import { generateToken, logger } from './utils';
 import { v4 as uuidv4 } from 'uuid';
-import passport, { generateToken } from './auth/passport';
+import passport from './auth/passport';
 import { Iuser } from './db/models/user';
 import { connectDB } from './db';
 import mongoose from 'mongoose';
@@ -22,8 +22,7 @@ import mongoose from 'mongoose';
 const config: EnvConfig = validateEnvironment(process.env);
 const { PORT, NODE_ENV, ALLOWED_ORIGINS } = config;
 
-// Initializing Connect to MongoDB
-connectDB();
+
 
 // Initialize core components
 const app = express();
@@ -40,6 +39,9 @@ app.use(cors({
 
 app.use(express.json());
 
+// Passport middleware
+app.use(passport.initialize());
+
 // Serve client build files
 app.use(express.static('./build/client'));
 
@@ -49,28 +51,9 @@ app.use((req, res, next) => {
   next();
 });
 
+
 // API routes
 app.use('/api', createRoutes(groupManager));
-
-// Passport middleware
-app.use(passport.initialize);
-
-// Auth routes
-app.post('/api/login', passport.authenticate('local', { session: false }), (req, res) => {
-  const token = generateToken(req.user as Iuser);
-  res.json({ token });
-});
-
-app.get('/api/auth/google', passport.authenticate('google', { scope: ['profile', 'email'], session: false }));
-
-app.get('/api/auth/google/callback', passport.authenticate('google', { failureRedirect: '/', session: false }), (req, res) => {
-  const token = generateToken(req.user as Iuser);
-  res.redirect(`/?token=${token}`);
-});
-
-app.get('/api/profile', passport.authenticate('jwt', { session: false }), (req, res) => {
-  res.json(req.user);
-});
 
 // Basic route for testing
 
@@ -107,6 +90,10 @@ wss.on('connection', (ws: UserWebSocket, req) => {
 
 // Start connection health monitoring
 websocketHandler.startHealthCheck(wss);
+
+// Initializing Connect to MongoDB
+connectDB();
+
 
 // Start HTTP server
 server.listen(PORT, () => {

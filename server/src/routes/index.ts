@@ -3,7 +3,7 @@ import { ZodError } from 'zod';
 import { GroupManager } from '../managers/GroupManager';
 import { validateGroupParams, GetGroupParams } from '../validation/schemas';
 import { getMemoryUsage, getUptime } from '../utils';
-
+import authRoutes from "./authRoutes"
 /**
  * REST API routes for PeerShare server
  * Provides HTTP endpoints for basic operations and health checks
@@ -30,7 +30,7 @@ export function createRoutes(groupManager: GroupManager): express.Router {
       memory,
       stats
     };
-    
+
     res.status(200).json(health);
   });
 
@@ -47,20 +47,26 @@ export function createRoutes(groupManager: GroupManager): express.Router {
   router.get('/health/ready', (req, res) => {
     // Check if the server is ready to accept connections
     const isReady = groupManager !== null;
-    
+
     if (isReady) {
-      res.status(200).json({ 
-        status: 'ready', 
+      res.status(200).json({
+        status: 'ready',
         timestamp: new Date().toISOString(),
         uptime: process.uptime()
       });
     } else {
-      res.status(503).json({ 
-        status: 'not ready', 
-        timestamp: new Date().toISOString() 
+      res.status(503).json({
+        status: 'not ready',
+        timestamp: new Date().toISOString()
       });
     }
   });
+
+  /**
+   * Auth Routes
+   */
+  router.get("/auth", authRoutes);
+
 
   /**
    * Get group information (for sharing links)
@@ -69,7 +75,7 @@ export function createRoutes(groupManager: GroupManager): express.Router {
     try {
       const params: GetGroupParams = validateGroupParams(req.params);
       const group = groupManager.getGroup(params.groupId);
-      
+
       if (!group) {
         return res.status(404).json({
           error: 'Group not found',
@@ -93,7 +99,7 @@ export function createRoutes(groupManager: GroupManager): express.Router {
           details: error.errors
         });
       }
-      
+
       console.error('Error getting group info:', error);
       res.status(500).json({
         error: 'Internal server error',
@@ -109,7 +115,7 @@ export function createRoutes(groupManager: GroupManager): express.Router {
     try {
       const params: GetGroupParams = validateGroupParams(req.params);
       const group = groupManager.getGroup(params.groupId);
-      
+
       if (!group) {
         return res.status(404).end();
       }
@@ -119,7 +125,7 @@ export function createRoutes(groupManager: GroupManager): express.Router {
       if (error instanceof ZodError) {
         return res.status(400).end();
       }
-      
+
       console.error('Error validating group:', error);
       res.status(500).end();
     }

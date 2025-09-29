@@ -1,3 +1,9 @@
 
+import { EnvConfig, validateEnvironment } from "./validation/schemas";
 
-export const MongoDBUrl = `${process.env.MONGO_BASE}://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_CLUSTER}/${process.env.MONGO_DB_NAME}?${process.env.mongoParams}`;
+export const config: EnvConfig = validateEnvironment(process.env);
+
+export const MongoDBUrl = `mongodb+srv://${config.MONGO_USERNAME}:${config.MONGO_PASSWORD}@${config.MONGO_CLUSTER_URL}/${config.MONGO_DB_NAME}?retryWrites=true&w=majority&appName=PeerShare-dev`;
+
+
+console.log("MongoDB Connection URL:", MongoDBUrl);

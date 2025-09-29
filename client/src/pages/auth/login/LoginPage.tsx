@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { authServices } from '../../../services/AuthServices';
 
 const LoginPage = () => {
     const [email, setEmail] = useState('');
@@ -6,18 +7,15 @@ const LoginPage = () => {
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-        const response = await fetch('/api/login', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ email, password })
-        });
-        const data = await response.json();
-        if (data.token) {
-            localStorage.setItem('token', data.token);
-            window.location.href = '/';
-        }
+        try {
+            const success = await authServices.login(email, password);
+            if (success) {
+                window.location.href = '/'; // Redirect to home page on successful login
+            }
+        } catch (error) {
+            console.error('Login failed:', error);
+            alert('Login failed. Please check your credentials and try again.');
+        };
     };
 
     const handleGoogleLogin = () => {

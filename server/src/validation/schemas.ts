@@ -229,7 +229,18 @@ export const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   ALLOWED_ORIGINS: z.string().optional(),
   WS_HEARTBEAT_INTERVAL: z.string().regex(/^\d+$/).transform(Number).default('30000'),
-  LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).default('info')
+  LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).default('info'),
+
+  MONGO_USERNAME: z.string(),
+  MONGO_PASSWORD: z.string(),
+  MONGO_DB_NAME: z.string(),
+  MONGO_CLUSTER_URL: z.string(),
+
+  GOOGLE_ICLIENT_ID: z.string(),
+  GOOGLE_CLENT_SECRET: z.string(),
+  GOOGLE_REDIRECT_URI: z.string().url(),
+  JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters long')
+
 });
 
 // Type exports for use throughout the application

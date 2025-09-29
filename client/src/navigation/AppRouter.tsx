@@ -16,11 +16,11 @@ const AppRouter = () => {
     }, []);
 
     return (
-        <Layout>
-            <BrowserRouter>
+        <BrowserRouter>
+            <Layout>
                 <AppRouterContent />
-            </BrowserRouter>
-        </Layout>
+            </Layout>
+        </BrowserRouter>
     )
 }
 

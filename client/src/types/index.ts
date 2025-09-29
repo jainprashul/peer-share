@@ -47,3 +47,22 @@ export interface CallPageProps {
   onToggleScreenShare: () => void;
   onEndCall: () => void;
 }
+
+
+// types for Button component
+export type GradientVariant =
+  | "purpleLight"
+  | "purpleDark"
+  | "greenLight"
+  | "greenDark"
+  | "redLight"
+  | "redDark";
+
+export type ButtonSize = "sm" | "md" | "lg";
+
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: GradientVariant;
+  size?: ButtonSize;
+  outline?: boolean;
+  className?: string;
+}
