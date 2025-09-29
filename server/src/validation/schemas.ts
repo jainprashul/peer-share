@@ -236,8 +236,8 @@ export const EnvSchema = z.object({
   MONGO_DB_NAME: z.string(),
   MONGO_CLUSTER_URL: z.string(),
 
-  GOOGLE_ICLIENT_ID: z.string(),
-  GOOGLE_CLENT_SECRET: z.string(),
+  GOOGLE_CLIENT_ID: z.string(),
+  GOOGLE_CLIENT_SECRET: z.string(),
   GOOGLE_REDIRECT_URI: z.string().url(),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters long')
 
