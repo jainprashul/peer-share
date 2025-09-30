@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { UserService } from "../services/userServices";
 import { generateToken } from "../utils";
 import passport from "passport";
-import { Iuser } from "../db/models/user";
+import { IUser } from "../db/models/user";
 
 const userService = new UserService();
 
@@ -57,7 +57,7 @@ export const profile = (req: Request, res: Response) => {
 //authMiddleware
 
 export function jwtAuthenticate(req: Request, res: Response, next: Function) {
-    passport.authenticate('jwt', { session: false }, (err: Error | null, user: Iuser, info: any) => {
+    passport.authenticate('jwt', { session: false }, (err: Error | null, user: IUser, info: any) => {
         if (err) return next(err);
         if (!user) return res.status(401).json({ message: 'Unauthorized' });
         req.user = user;

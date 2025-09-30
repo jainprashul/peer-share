@@ -1,7 +1,7 @@
 import mongoose, { Document, Model, Schema } from "mongoose";
 import { User as SharedUser } from "@peer-share/shared";
 
-export interface Iuser extends Omit<SharedUser, 'id'>, Document {
+export interface IUser extends Omit<SharedUser, 'id'>, Document {
     name: string;
     email: string;
     username: string;
@@ -10,14 +10,14 @@ export interface Iuser extends Omit<SharedUser, 'id'>, Document {
 }
 
 // Define the User schema
-const UserSchema: Schema<Iuser> = new Schema({
+const UserSchema: Schema<IUser> = new Schema({
     name: { type: String, required: true },
     username: { type: String, required: true },
     email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
+    password: { type: String, required: true, select: false },
     createdAt: { type: Date, default: Date.now }
 });
 
 // Export the User model
-export const User: Model<Iuser> = mongoose.model<Iuser>('User', UserSchema);
+export const User: Model<IUser> = mongoose.model<IUser>('User', UserSchema);
 

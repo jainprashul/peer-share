@@ -65,7 +65,7 @@ export function createRoutes(groupManager: GroupManager): express.Router {
   /**
    * Auth Routes
    */
-  router.get("/auth", authRoutes);
+  router.use("/auth", authRoutes);
 
 
   /**

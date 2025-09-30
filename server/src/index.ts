@@ -7,10 +7,9 @@ import { WebSocketHandler } from './socket/WebSocketHandler';
 import { createRoutes } from './routes/index';
 import { UserWebSocket } from './types/index';
 import { validateEnvironment, EnvConfig } from './validation/schemas';
-import { generateToken, logger } from './utils';
+import { logger } from './utils';
 import { v4 as uuidv4 } from 'uuid';
 import passport from './auth/passport';
-import { Iuser } from './db/models/user';
 import { connectDB } from './db';
 import mongoose from 'mongoose';
 

@@ -1,9 +1,10 @@
-import { Iuser, User } from "../db/models/user";
+import { IUser, User } from "../db/models/user";
 import bcrypt from 'bcrypt';
+import { logger } from "../utils";
 
 export class UserService {
 
-    async createUser(data: Partial<Iuser>): Promise<Iuser> {
+    async createUser(data: Partial<IUser>): Promise<IUser> {
         // const user = new User(data);
         // await user.save();
         // return user;
@@ -15,23 +16,38 @@ export class UserService {
             password: hashedPassword
         });
         await user.save();
+        logger.info(`User created: ${user.email}`);
         return user;
     }
 
-    async getUserById(id: string): Promise<Iuser | null> {
-        return User.findById(id);
+    async getUserById(id: string): Promise<IUser | null> {
+        return await User.findById(id);
     }
 
-    async getUserByEmail(email: string): Promise<Iuser | null> {
-        return User.findOne({ email });
+    async getUserByEmail(email: string): Promise<IUser | null> {
+        return await User.findOne({ email });
     }
 
-    async updateUser(id: string, data: Partial<Iuser>): Promise<Iuser | null> {
-        return User.findByIdAndUpdate(id, data, { new: true });
+    async updateUser(id: string, data: Partial<IUser>): Promise<IUser | null> {
+        try {
+            const user = await User.findByIdAndUpdate(id, data, { new: true });
+            logger.log(`User updated: ${user?.email}`);
+            return user;
+        } catch (error) {
+            logger.error(`Error updating user: ${error}`);
+            return null;
+        }
     }
 
-    async deleteUser(id: string): Promise<Iuser | null> {
-        return User.findByIdAndDelete(id);
+    async deleteUser(id: string): Promise<IUser | null> {
+        try {
+            const user = await User.findByIdAndDelete(id);
+            logger.log(`User Deleted: ${user?.id}`);
+            return user;
+        } catch (error) {
+            logger.error(`user deleting failed: ${error}`);
+            return null;
+        }
     }
 
     async comparePassword(password: string, hashedPassword: string): Promise<boolean> {

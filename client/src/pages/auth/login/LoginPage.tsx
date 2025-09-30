@@ -1,23 +1,27 @@
 import React, { useState } from 'react';
 import { authServices } from '../../../services/AuthServices';
+import { useNavigate } from 'react-router';
 
 const LoginPage = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-
+    const navigate = useNavigate();
+    // Function to handle login
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
             const success = await authServices.login(email, password);
             if (success) {
-                window.location.href = '/'; // Redirect to home page on successful login
+                console.log("logged  in :" + success);
+                navigate("/"); // Redirect to home page after successful login
             }
         } catch (error) {
             console.error('Login failed:', error);
             alert('Login failed. Please check your credentials and try again.');
-        };
+        }
     };
 
+    // Function to handle Google OAuth login
     const handleGoogleLogin = () => {
         window.location.href = '/api/auth/google';
     };
@@ -42,6 +46,7 @@ const LoginPage = () => {
                             id="email"
                             type="email"
                             value={email}
+                            autoComplete='email'
                             onChange={(e) => setEmail(e.target.value)}
                             required
                             className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
@@ -60,6 +65,7 @@ const LoginPage = () => {
                             id="password"
                             type="password"
                             value={password}
+                            autoComplete='current-password'
                             onChange={(e) => setPassword(e.target.value)}
                             required
                             className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"

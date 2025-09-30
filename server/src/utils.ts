@@ -1,5 +1,5 @@
 import Logger from "@peer-share/shared/utils/Logger";
-import { Iuser } from "./db/models/user";
+import { IUser } from "./db/models/user";
 import jwt from "jsonwebtoken";
 
 export const logger = Logger.getInstance();
@@ -20,7 +20,7 @@ export const getMemoryUsage = () => {
 
 
 // Generate JWT Token
-export const generateToken = (user: Iuser) => {
+export const generateToken = (user: IUser) => {
   return jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET!, { expiresIn: '1h' });
 };
 

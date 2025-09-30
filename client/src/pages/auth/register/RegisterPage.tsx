@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import React, { use, useState } from "react";
+import { authServices } from "../../../services/AuthServices";
+import { useNavigate } from "react-router";
 
 const SignupPage = () => {
     const [form, setForm] = useState({
@@ -7,21 +9,22 @@ const SignupPage = () => {
         email: "",
         password: "",
     });
-
+    const navigate = useNavigate();
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setForm({ ...form, [e.target.name]: e.target.value });
     };
 
     const handleSignup = async (e: React.FormEvent) => {
         e.preventDefault();
-        const response = await fetch("/api/register", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(form),
-        });
-        const data = await response.json();
-        if (data.success) {
-            window.location.href = "/login";
+        try {
+            const success = await authServices.register(form.name, form.username, form.email, form.password);
+            if (success) {
+                console.log("new User Registered :" + success);
+                navigate("/"); // Redirect to home page after successful signup
+            }
+        } catch (error) {
+            console.error('Signup failed:', error);
+            alert("Signup Failed !!!!");
         }
     };
 
@@ -104,6 +107,7 @@ const SignupPage = () => {
                             type="password"
                             value={form.password}
                             onChange={handleChange}
+                            autoComplete="new-password"
                             required
                             className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                         />
