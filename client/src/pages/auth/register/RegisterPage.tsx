@@ -20,7 +20,7 @@ const SignupPage = () => {
             const success = await authServices.register(form.name, form.username, form.email, form.password);
             if (success) {
                 console.log("new User Registered :" + success);
-                navigate("/"); // Redirect to home page after successful signup
+                navigate("/home"); // Redirect to home page after successful signup
             }
         } catch (error) {
             console.error('Signup failed:', error);

@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { UserService } from "../services/userServices";
-import { generateToken } from "../utils";
+import { generateToken, logger } from "../utils";
 import passport from "passport";
 import { IUser } from "../db/models/user";
 
@@ -26,11 +26,13 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
 export const login = async (req: Request, res: Response): Promise<void> => {
     try {
         const { email, password } = req.body;
+        console.log("Login attempt for email:", email, password);
         const user = await userService.getUserByEmail(email); // Find user by email
         if (!user) {
             res.status(401).json({ message: 'Invalid credentials' });
             return;
         }
+        console.log("User found:", user);
 
         //compare password
         const isMatch = await userService.comparePassword(password, user.password!);
@@ -43,6 +45,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         res.json({ user, token });
 
     } catch (err) {
+        logger.error(`Login error: ${err}`);
         res.status(500).json({ message: "Login Failed ", error: err });
     }
 }

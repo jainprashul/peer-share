@@ -2,14 +2,19 @@ import React from 'react'
 import { useAppSelector } from '../store/store';
 import { Button } from '../components/Button/Button';
 import { useNavigate } from 'react-router';
+import api, { getToken } from '../api/axios';
+import { authServices } from '../services/AuthServices';
 
 function Layout({ children }: { children: React.ReactNode }) {
     const user = useAppSelector((state) => state.user.currentUser);
     const navigate = useNavigate();
-    console.log(user);
-    function handleLogin() {
+    console.log("user: " + user?.username);
+
+    function handleLogout() {
+        authServices.logout();
         navigate('/login');
     }
+    const isAuthenticated = getToken() ? true : false;
 
     return (
         <div className="min-h-screen bg-gray-100">
@@ -20,7 +25,9 @@ function Layout({ children }: { children: React.ReactNode }) {
                         <div className="text-sm text-gray-500">{user?.id}
                             <br />
                             {user?.username}
-                            <Button onClick={handleLogin}>Logout</Button>
+                            {isAuthenticated && (
+                                <Button onClick={handleLogout}>Logout</Button>
+                            )}
                         </div>
                     </div>
                 </div>

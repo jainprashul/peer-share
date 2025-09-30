@@ -4,6 +4,7 @@ import { logger } from "../utils";
 
 export class UserService {
 
+    // Create a new user with hashed password
     async createUser(data: Partial<IUser>): Promise<IUser> {
         // const user = new User(data);
         // await user.save();
@@ -20,14 +21,17 @@ export class UserService {
         return user;
     }
 
+    // Get user by ID
     async getUserById(id: string): Promise<IUser | null> {
         return await User.findById(id);
     }
 
+    // Get user by email
     async getUserByEmail(email: string): Promise<IUser | null> {
-        return await User.findOne({ email });
+        return await User.findOne({ email }).select('+password');
     }
 
+    // Update user details
     async updateUser(id: string, data: Partial<IUser>): Promise<IUser | null> {
         try {
             const user = await User.findByIdAndUpdate(id, data, { new: true });
@@ -39,6 +43,7 @@ export class UserService {
         }
     }
 
+    // Delete user by ID
     async deleteUser(id: string): Promise<IUser | null> {
         try {
             const user = await User.findByIdAndDelete(id);
@@ -50,6 +55,7 @@ export class UserService {
         }
     }
 
+    // Compare plaintext password with hashed password
     async comparePassword(password: string, hashedPassword: string): Promise<boolean> {
         return bcrypt.compare(password, hashedPassword);
     }

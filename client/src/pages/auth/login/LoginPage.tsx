@@ -13,7 +13,7 @@ const LoginPage = () => {
             const success = await authServices.login(email, password);
             if (success) {
                 console.log("logged  in :" + success);
-                navigate("/"); // Redirect to home page after successful login
+                navigate("/home"); // Redirect to home page after successful login
             }
         } catch (error) {
             console.error('Login failed:', error);
